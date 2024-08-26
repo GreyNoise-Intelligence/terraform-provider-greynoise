@@ -2,9 +2,7 @@ package provider
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
 	"os"
 
@@ -36,9 +34,8 @@ type GreyNoiseProvider struct {
 
 // GreyNoiseProviderModel describes the provider data model.
 type GreyNoiseProviderModel struct {
-	BaseURL     types.String `tfsdk:"base_url"`
-	WorkspaceID types.String `tfsdk:"workspace_id"`
-	APIKey      types.String `tfsdk:"api_key"`
+	BaseURL types.String `tfsdk:"base_url"`
+	APIKey  types.String `tfsdk:"api_key"`
 }
 
 func (p *GreyNoiseProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -53,10 +50,6 @@ func (p *GreyNoiseProvider) Schema(_ context.Context, req provider.SchemaRequest
 				MarkdownDescription: "GreyNoise API Key",
 				Optional:            true,
 				Sensitive:           true,
-			},
-			"workspace_id": schema.StringAttribute{
-				MarkdownDescription: "GreyNoise Workspace ID",
-				Required:            true,
 			},
 			"base_url": schema.StringAttribute{
 				MarkdownDescription: "GreyNoise API Base URL",
@@ -93,9 +86,7 @@ func (p *GreyNoiseProvider) Configure(ctx context.Context, req provider.Configur
 	}
 
 	// Validate parameters and create client
-	options := []client.Option{
-		client.WithWorkspaceID(config.WorkspaceID.ValueString()),
-	}
+	var options []client.Option
 
 	if !config.BaseURL.IsNull() {
 		baseURL, err := url.Parse(config.BaseURL.ValueString())
@@ -121,32 +112,11 @@ func (p *GreyNoiseProvider) Configure(ctx context.Context, req provider.Configur
 		return
 	}
 
-	if err := c.Ping(); err != nil {
-		var statusCodeErr *client.ErrUnexpectedStatusCode
-		if errors.As(err, &statusCodeErr) {
-			if statusCodeErr.StatusCode() == http.StatusUnauthorized {
-				resp.Diagnostics.AddError(
-					"Unable to authenticate with GreyNoise API",
-					"Check your API key to ensure it is valid and unexpired.",
-				)
-
-				return
-			}
-		}
-
-		resp.Diagnostics.AddError(
-			"Unable to ping the GreyNoise API",
-			fmt.Sprintf("Error attempting to ping: %s", err.Error()),
-		)
-
-		return
-	}
-
 	data := &Data{
-		APIKey:      apiKey,
-		WorkspaceID: config.WorkspaceID.ValueString(),
-		Client:      c,
+		APIKey: apiKey,
+		Client: c,
 	}
+
 	resp.DataSourceData = data
 	resp.ResourceData = data
 }
@@ -161,14 +131,11 @@ func (p *GreyNoiseProvider) DataSources(_ context.Context) []func() datasource.D
 	return []func() datasource.DataSource{
 		NewPersonaDataSource,
 		NewPersonasDataSource,
-		NewSensorDataSource,
 	}
 }
 
 func (p *GreyNoiseProvider) Functions(_ context.Context) []func() function.Function {
-	return []func() function.Function{
-		NewExampleFunction,
-	}
+	return []func() function.Function{}
 }
 
 func New(version string) func() provider.Provider {

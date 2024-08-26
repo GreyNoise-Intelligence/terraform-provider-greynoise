@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/GreyNoise-Intelligence/terraform-provider-greynoise/internal/client"
@@ -382,13 +383,17 @@ func TestGreyNoiseClient_PersonasSearch(t *testing.T) {
 	}
 }
 
-func TestGreyNoiseClient_Ping(t *testing.T) {
+func TestGreyNoiseClient_Account(t *testing.T) {
 	testAPIKey := "test-2037klfsjlajf"
 
+	type want struct {
+		resp *client.Account
+		err  error
+	}
 	testCases := []struct {
 		name   string
 		expect func(*testing.T, *client.MockHTTPClient)
-		want   error
+		want   want
 	}{
 		{
 			name: "happy path",
@@ -398,13 +403,22 @@ func TestGreyNoiseClient_Ping(t *testing.T) {
 					DoAndReturn(func(req *http.Request) (*http.Response, error) {
 						assert.Equal(t, req.Method, http.MethodGet)
 						assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
-						assert.Equal(t, "https://api.greynoise.io/ping", req.URL.String())
+						assert.Equal(t, "https://api.greynoise.io/v1/account", req.URL.String())
 
 						return &http.Response{
 							StatusCode: http.StatusOK,
-							Body:       responseBody(``),
+							Body: responseBody(`{
+							  "user_id": "cd280af5-a2df-4a4f-b512-206222bd5c9e",
+							  "workspace_id": "343689ce-47bb-42c9-868d-c707fc82bd99"
+							}`),
 						}, nil
 					})
+			},
+			want: want{
+				resp: &client.Account{
+					UserID:      uuid.MustParse("cd280af5-a2df-4a4f-b512-206222bd5c9e"),
+					WorkspaceID: uuid.MustParse("343689ce-47bb-42c9-868d-c707fc82bd99"),
+				},
 			},
 		},
 		{
@@ -415,12 +429,14 @@ func TestGreyNoiseClient_Ping(t *testing.T) {
 					DoAndReturn(func(req *http.Request) (*http.Response, error) {
 						assert.Equal(t, req.Method, http.MethodGet)
 						assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
-						assert.Equal(t, "https://api.greynoise.io/ping", req.URL.String())
+						assert.Equal(t, "https://api.greynoise.io/v1/account", req.URL.String())
 
 						return nil, errors.New("ping error")
 					})
 			},
-			want: errors.New("ping error"),
+			want: want{
+				err: errors.New("ping error"),
+			},
 		},
 		{
 			name: "unexpected status code",
@@ -430,7 +446,7 @@ func TestGreyNoiseClient_Ping(t *testing.T) {
 					DoAndReturn(func(req *http.Request) (*http.Response, error) {
 						assert.Equal(t, req.Method, http.MethodGet)
 						assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
-						assert.Equal(t, "https://api.greynoise.io/ping", req.URL.String())
+						assert.Equal(t, "https://api.greynoise.io/v1/account", req.URL.String())
 
 						return &http.Response{
 							StatusCode: http.StatusInternalServerError,
@@ -438,7 +454,9 @@ func TestGreyNoiseClient_Ping(t *testing.T) {
 						}, nil
 					})
 			},
-			want: client.NewErrUnexpectedStatusCode(http.StatusOK, http.StatusInternalServerError),
+			want: want{
+				err: client.NewErrUnexpectedStatusCode(http.StatusOK, http.StatusInternalServerError),
+			},
 		},
 	}
 	for _, tc := range testCases {
@@ -456,7 +474,9 @@ func TestGreyNoiseClient_Ping(t *testing.T) {
 				tc.expect(t, mockHTTPClient)
 			}
 
-			assert.Equal(t, tc.want, gClient.Ping())
+			acct, err := gClient.Account()
+			assert.Equal(t, tc.want.err, err)
+			assert.Equal(t, tc.want.resp, acct)
 		})
 	}
 }

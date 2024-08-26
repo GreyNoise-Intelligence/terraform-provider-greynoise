@@ -20,10 +20,3 @@ func WithHTTPClient(httpClient HTTPClient) Option {
 		client.httpClient = httpClient
 	}
 }
-
-// WithWorkspaceID is used to set the internal workspace ID.
-func WithWorkspaceID(id string) Option {
-	return func(client *GreyNoiseClient) {
-		client.workspaceID = id
-	}
-}

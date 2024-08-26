@@ -8,7 +8,7 @@ terraform {
 }
 
 provider "greynoise" {
-  workspace_id = "75a76a71-5cc1-492c-a8b7-b546bd4959ae"
+  // GN_API_KEY env var is used to provide key
 }
 
 data "greynoise_personas" "rdp" {
@@ -17,13 +17,14 @@ data "greynoise_personas" "rdp" {
 }
 
 resource "greynoise_sensor_bootstrap" "this" {
-  public_ip = "44.202.75.6"
+  public_ip = var.sensor_ip
 
   connection {
-    host        = "44.202.75.6"
-    port        = 22
-    user        = "ubuntu"
-    private_key = file("~/.terraform.d/nayyara-sensors.pem")
+    host = var.sensor_ip
+    user = var.sensor_ssh.user
+    port = var.sensor_ssh.port
+
+    private_key = file(var.sensor_ssh.ssh_key_file)
   }
 
   provisioner "remote-exec" {
@@ -42,22 +43,12 @@ resource "greynoise_sensor_bootstrap" "this" {
   }
 }
 
-resource "greynoise_sensor" "this" {
-  boostrap_connection = {
-    host        = "44.202.75.6"
-    port        = greynoise_sensor_bootstrap.this.ssh_port_selected
-    user        = "ubuntu"
-    private_key = file("~/.terraform.d/nayyara-sensors.pem")
+/*
+resource "greynoise_sensor_persona" "this" {
+  sensor_filter = {
+    public_ip = var.sensor_ip
   }
 
+  persona_id = data.greynoise_personas.rdp.ids[0]
 }
-
-output "personas" {
-  value = {
-    ids = data.greynoise_personas.rdp.ids
-  }
-}
-
-output "sensor_bootstrap" {
-  value = greynoise_sensor_bootstrap.this.ssh_port_selected
-}
+*/

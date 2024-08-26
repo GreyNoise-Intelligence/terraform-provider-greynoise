@@ -104,7 +104,7 @@ func (d *PersonasDataSource) Read(ctx context.Context, req datasource.ReadReques
 
 	// Search and process results
 	result, err := d.data.Client.PersonasSearch(client.PersonaSearchFilters{
-		Workspace:  d.data.WorkspaceID,
+		Workspace:  d.data.Client.WorkspaceID().String(),
 		Tiers:      config.Tier.ValueString(),
 		Categories: config.Category.ValueString(),
 		Protocols:  config.Category.ValueString(),

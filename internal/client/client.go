@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/mitchellh/mapstructure"
 )
@@ -27,10 +28,10 @@ var (
 
 // GreyNoiseClient is a thin wrapper for a HTTP client.
 type GreyNoiseClient struct {
-	baseURL     *url.URL
-	apiKey      string
-	workspaceID string
-	httpClient  HTTPClient
+	baseURL    *url.URL
+	apiKey     string
+	account    Account
+	httpClient HTTPClient
 }
 
 // New is the preferred way to instantiate the GreyNoiseClient.
@@ -58,15 +59,35 @@ func New(apiKey string, options ...Option) (*GreyNoiseClient, error) {
 		client.httpClient = httpClient
 	}
 
+	acct, err := client.Account()
+	if err != nil {
+		return nil, fmt.Errorf("account error: %w", err)
+	}
+
+	client.account = *acct
+
 	return client, nil
 }
 
-func (c *GreyNoiseClient) Ping() error {
-	u := c.baseURL.ResolveReference(&url.URL{Path: "/ping"})
+func (c *GreyNoiseClient) WorkspaceID() uuid.UUID {
+	return c.account.WorkspaceID
+}
+
+func (c *GreyNoiseClient) UserID() uuid.UUID {
+	return c.account.UserID
+}
+
+type Account struct {
+	UserID      uuid.UUID `json:"user_id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+}
+
+func (c *GreyNoiseClient) Account() (*Account, error) {
+	u := c.baseURL.ResolveReference(&url.URL{Path: "/v1/account"})
 
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	c.setAuthHeader(req)
@@ -74,18 +95,19 @@ func (c *GreyNoiseClient) Ping() error {
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return NewErrUnexpectedStatusCode(http.StatusOK, resp.StatusCode)
+		return nil, NewErrUnexpectedStatusCode(http.StatusOK, resp.StatusCode)
 	}
 
-	return err
-}
+	var result Account
+	if err = json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
 
-func (c *GreyNoiseClient) SensorBootstrapScript() (*string, error) {
-	return nil, nil
+	return &result, nil
 }
 
 func (c *GreyNoiseClient) PersonasSearch(filters PersonaSearchFilters) (*PersonaSearchResponse, error) {
@@ -169,7 +191,7 @@ func (c *GreyNoiseClient) GetPersona(id string) (*Persona, error) {
 
 func (c *GreyNoiseClient) SensorBootstrapURL() *url.URL {
 	return c.baseURL.ResolveReference(&url.URL{
-		Path: fmt.Sprintf("/v1/workspaces/%s/sensors/bootstrap/script", c.workspaceID),
+		Path: fmt.Sprintf("/v1/workspaces/%s/sensors/bootstrap/script", c.WorkspaceID()),
 	})
 }
 
