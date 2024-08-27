@@ -94,8 +94,6 @@ func TestGreyNoiseClient_GetPersona(t *testing.T) {
 			name:  "happy path",
 			input: "ac65d8a0-ed21-417e-a1a2-65a4e09c3144",
 			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
-				mockAccount(t, httpClient)
-
 				httpClient.EXPECT().
 					Do(gomock.Any()).
 					DoAndReturn(func(req *http.Request) (*http.Response, error) {
@@ -118,8 +116,6 @@ func TestGreyNoiseClient_GetPersona(t *testing.T) {
 			name:  "http client error",
 			input: "bc65d8a0-ed21-417e-a1a2-65a4e09c3144",
 			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
-				mockAccount(t, httpClient)
-
 				httpClient.EXPECT().
 					Do(gomock.Any()).
 					DoAndReturn(func(req *http.Request) (*http.Response, error) {
@@ -139,8 +135,6 @@ func TestGreyNoiseClient_GetPersona(t *testing.T) {
 			name:  "invalid response body",
 			input: "cc65d8a0-ed21-417e-a1a2-65a4e09c3144",
 			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
-				mockAccount(t, httpClient)
-
 				httpClient.EXPECT().
 					Do(gomock.Any()).
 					DoAndReturn(func(req *http.Request) (*http.Response, error) {
@@ -163,8 +157,6 @@ func TestGreyNoiseClient_GetPersona(t *testing.T) {
 			name:  "unexpected status code",
 			input: "dc65d8a0-ed21-417e-a1a2-65a4e09c3144",
 			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
-				mockAccount(t, httpClient)
-
 				httpClient.EXPECT().
 					Do(gomock.Any()).
 					DoAndReturn(func(req *http.Request) (*http.Response, error) {
@@ -192,6 +184,8 @@ func TestGreyNoiseClient_GetPersona(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockHTTPClient := client.NewMockHTTPClient(ctrl)
+			mockAccount(t, mockHTTPClient)
+
 			if tc.expect != nil {
 				tc.expect(t, mockHTTPClient)
 			}
@@ -292,8 +286,6 @@ func TestGreyNoiseClient_PersonasSearch(t *testing.T) {
 				PageSize:  10,
 			},
 			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
-				mockAccount(t, httpClient)
-
 				httpClient.EXPECT().
 					Do(gomock.Any()).
 					DoAndReturn(func(req *http.Request) (*http.Response, error) {
@@ -332,9 +324,6 @@ func TestGreyNoiseClient_PersonasSearch(t *testing.T) {
 		},
 		{
 			name: "missing workspace filter",
-			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
-				mockAccount(t, httpClient)
-			},
 			want: want{
 				err: client.NewErrMissingField("workspace"),
 			},
@@ -345,8 +334,6 @@ func TestGreyNoiseClient_PersonasSearch(t *testing.T) {
 				Workspace: "45443a54-1e10-45e8-8164-c38aa238615e",
 			},
 			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
-				mockAccount(t, httpClient)
-
 				httpClient.EXPECT().
 					Do(gomock.Any()).
 					DoAndReturn(func(req *http.Request) (*http.Response, error) {
@@ -368,8 +355,6 @@ func TestGreyNoiseClient_PersonasSearch(t *testing.T) {
 				Workspace: "25443a54-1e10-45e8-8164-c38aa238615e",
 			},
 			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
-				mockAccount(t, httpClient)
-
 				httpClient.EXPECT().
 					Do(gomock.Any()).
 					DoAndReturn(func(req *http.Request) (*http.Response, error) {
@@ -401,8 +386,6 @@ func TestGreyNoiseClient_PersonasSearch(t *testing.T) {
 				Workspace: "65443a54-1e10-45e8-8164-c38aa238615e",
 			},
 			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
-				mockAccount(t, httpClient)
-
 				httpClient.EXPECT().
 					Do(gomock.Any()).
 					DoAndReturn(func(req *http.Request) (*http.Response, error) {
@@ -430,6 +413,8 @@ func TestGreyNoiseClient_PersonasSearch(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockHTTPClient := client.NewMockHTTPClient(ctrl)
+			mockAccount(t, mockHTTPClient)
+
 			if tc.expect != nil {
 				tc.expect(t, mockHTTPClient)
 			}
