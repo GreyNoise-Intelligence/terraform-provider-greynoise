@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/GreyNoise-Intelligence/terraform-provider-greynoise/internal/client"
@@ -36,6 +35,12 @@ func TestGreyNoiseClient_GetPersona(t *testing.T) {
 			3389,
 		},
 	}
+
+	testAccountJSON := `
+{
+  "user_id": "4c65d8a0-ed21-417e-a1a2-65a4e09c3144",
+  "workspace_id": "7c65d8a0-ed21-417e-a1a2-65a4e09c3144"
+}`
 	testPersonaJSON := `
 {
   "id": "ac65d8a0-ed21-417e-a1a2-65a4e09c3144",
@@ -58,6 +63,21 @@ func TestGreyNoiseClient_GetPersona(t *testing.T) {
   ]
 }`
 
+	mockAccount := func(t *testing.T, httpClient *client.MockHTTPClient) {
+		httpClient.EXPECT().
+			Do(gomock.Any()).
+			DoAndReturn(func(req *http.Request) (*http.Response, error) {
+				assert.Equal(t, req.Method, http.MethodGet)
+				assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
+				assert.Equal(t, "https://api.greynoise.io/v1/account", req.URL.String())
+
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       responseBody(testAccountJSON),
+				}, nil
+			})
+	}
+
 	type want struct {
 		response *client.Persona
 		err      error
@@ -73,6 +93,8 @@ func TestGreyNoiseClient_GetPersona(t *testing.T) {
 			name:  "happy path",
 			input: "ac65d8a0-ed21-417e-a1a2-65a4e09c3144",
 			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
+				mockAccount(t, httpClient)
+
 				httpClient.EXPECT().
 					Do(gomock.Any()).
 					DoAndReturn(func(req *http.Request) (*http.Response, error) {
@@ -95,6 +117,8 @@ func TestGreyNoiseClient_GetPersona(t *testing.T) {
 			name:  "http client error",
 			input: "bc65d8a0-ed21-417e-a1a2-65a4e09c3144",
 			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
+				mockAccount(t, httpClient)
+
 				httpClient.EXPECT().
 					Do(gomock.Any()).
 					DoAndReturn(func(req *http.Request) (*http.Response, error) {
@@ -114,6 +138,8 @@ func TestGreyNoiseClient_GetPersona(t *testing.T) {
 			name:  "invalid response body",
 			input: "cc65d8a0-ed21-417e-a1a2-65a4e09c3144",
 			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
+				mockAccount(t, httpClient)
+
 				httpClient.EXPECT().
 					Do(gomock.Any()).
 					DoAndReturn(func(req *http.Request) (*http.Response, error) {
@@ -136,6 +162,8 @@ func TestGreyNoiseClient_GetPersona(t *testing.T) {
 			name:  "unexpected status code",
 			input: "dc65d8a0-ed21-417e-a1a2-65a4e09c3144",
 			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
+				mockAccount(t, httpClient)
+
 				httpClient.EXPECT().
 					Do(gomock.Any()).
 					DoAndReturn(func(req *http.Request) (*http.Response, error) {
@@ -163,12 +191,12 @@ func TestGreyNoiseClient_GetPersona(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockHTTPClient := client.NewMockHTTPClient(ctrl)
-			gClient, err := client.New(testAPIKey, client.WithHTTPClient(mockHTTPClient))
-			assert.NoError(t, err)
-
 			if tc.expect != nil {
 				tc.expect(t, mockHTTPClient)
 			}
+
+			gClient, err := client.New(testAPIKey, client.WithHTTPClient(mockHTTPClient))
+			assert.NoError(t, err)
 
 			response, err := gClient.GetPersona(tc.input)
 			assert.Equal(t, tc.want.response, response)
@@ -199,6 +227,12 @@ func TestGreyNoiseClient_PersonasSearch(t *testing.T) {
 			3389,
 		},
 	}
+
+	testAccountJSON := `
+{
+  "user_id": "4c65d8a0-ed21-417e-a1a2-65a4e09c3144",
+  "workspace_id": "7c65d8a0-ed21-417e-a1a2-65a4e09c3144"
+}`
 	testPersonaJSON := `
 {
   "id": "ac65d8a0-ed21-417e-a1a2-65a4e09c3144",
@@ -221,6 +255,21 @@ func TestGreyNoiseClient_PersonasSearch(t *testing.T) {
   ]
 }`
 
+	mockAccount := func(t *testing.T, httpClient *client.MockHTTPClient) {
+		httpClient.EXPECT().
+			Do(gomock.Any()).
+			DoAndReturn(func(req *http.Request) (*http.Response, error) {
+				assert.Equal(t, req.Method, http.MethodGet)
+				assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
+				assert.Equal(t, "https://api.greynoise.io/v1/account", req.URL.String())
+
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       responseBody(testAccountJSON),
+				}, nil
+			})
+	}
+
 	type want struct {
 		response *client.PersonaSearchResponse
 		err      error
@@ -242,6 +291,8 @@ func TestGreyNoiseClient_PersonasSearch(t *testing.T) {
 				PageSize:  10,
 			},
 			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
+				mockAccount(t, httpClient)
+
 				httpClient.EXPECT().
 					Do(gomock.Any()).
 					DoAndReturn(func(req *http.Request) (*http.Response, error) {
@@ -280,6 +331,9 @@ func TestGreyNoiseClient_PersonasSearch(t *testing.T) {
 		},
 		{
 			name: "missing workspace filter",
+			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
+				mockAccount(t, httpClient)
+			},
 			want: want{
 				err: client.NewErrMissingField("workspace"),
 			},
@@ -290,6 +344,8 @@ func TestGreyNoiseClient_PersonasSearch(t *testing.T) {
 				Workspace: "45443a54-1e10-45e8-8164-c38aa238615e",
 			},
 			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
+				mockAccount(t, httpClient)
+
 				httpClient.EXPECT().
 					Do(gomock.Any()).
 					DoAndReturn(func(req *http.Request) (*http.Response, error) {
@@ -311,6 +367,8 @@ func TestGreyNoiseClient_PersonasSearch(t *testing.T) {
 				Workspace: "25443a54-1e10-45e8-8164-c38aa238615e",
 			},
 			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
+				mockAccount(t, httpClient)
+
 				httpClient.EXPECT().
 					Do(gomock.Any()).
 					DoAndReturn(func(req *http.Request) (*http.Response, error) {
@@ -342,6 +400,8 @@ func TestGreyNoiseClient_PersonasSearch(t *testing.T) {
 				Workspace: "65443a54-1e10-45e8-8164-c38aa238615e",
 			},
 			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
+				mockAccount(t, httpClient)
+
 				httpClient.EXPECT().
 					Do(gomock.Any()).
 					DoAndReturn(func(req *http.Request) (*http.Response, error) {
@@ -369,114 +429,16 @@ func TestGreyNoiseClient_PersonasSearch(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockHTTPClient := client.NewMockHTTPClient(ctrl)
-			gClient, err := client.New(testAPIKey, client.WithHTTPClient(mockHTTPClient))
-			assert.NoError(t, err)
-
 			if tc.expect != nil {
 				tc.expect(t, mockHTTPClient)
 			}
+
+			gClient, err := client.New(testAPIKey, client.WithHTTPClient(mockHTTPClient))
+			assert.NoError(t, err)
 
 			response, err := gClient.PersonasSearch(tc.input)
 			assert.Equal(t, tc.want.response, response)
 			assert.Equal(t, tc.want.err, err)
-		})
-	}
-}
-
-func TestGreyNoiseClient_Account(t *testing.T) {
-	testAPIKey := "test-2037klfsjlajf"
-
-	type want struct {
-		resp *client.Account
-		err  error
-	}
-	testCases := []struct {
-		name   string
-		expect func(*testing.T, *client.MockHTTPClient)
-		want   want
-	}{
-		{
-			name: "happy path",
-			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
-				httpClient.EXPECT().
-					Do(gomock.Any()).
-					DoAndReturn(func(req *http.Request) (*http.Response, error) {
-						assert.Equal(t, req.Method, http.MethodGet)
-						assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
-						assert.Equal(t, "https://api.greynoise.io/v1/account", req.URL.String())
-
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							Body: responseBody(`{
-							  "user_id": "cd280af5-a2df-4a4f-b512-206222bd5c9e",
-							  "workspace_id": "343689ce-47bb-42c9-868d-c707fc82bd99"
-							}`),
-						}, nil
-					})
-			},
-			want: want{
-				resp: &client.Account{
-					UserID:      uuid.MustParse("cd280af5-a2df-4a4f-b512-206222bd5c9e"),
-					WorkspaceID: uuid.MustParse("343689ce-47bb-42c9-868d-c707fc82bd99"),
-				},
-			},
-		},
-		{
-			name: "http client error",
-			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
-				httpClient.EXPECT().
-					Do(gomock.Any()).
-					DoAndReturn(func(req *http.Request) (*http.Response, error) {
-						assert.Equal(t, req.Method, http.MethodGet)
-						assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
-						assert.Equal(t, "https://api.greynoise.io/v1/account", req.URL.String())
-
-						return nil, errors.New("ping error")
-					})
-			},
-			want: want{
-				err: errors.New("ping error"),
-			},
-		},
-		{
-			name: "unexpected status code",
-			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
-				httpClient.EXPECT().
-					Do(gomock.Any()).
-					DoAndReturn(func(req *http.Request) (*http.Response, error) {
-						assert.Equal(t, req.Method, http.MethodGet)
-						assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
-						assert.Equal(t, "https://api.greynoise.io/v1/account", req.URL.String())
-
-						return &http.Response{
-							StatusCode: http.StatusInternalServerError,
-							Body:       responseBody(``),
-						}, nil
-					})
-			},
-			want: want{
-				err: client.NewErrUnexpectedStatusCode(http.StatusOK, http.StatusInternalServerError),
-			},
-		},
-	}
-	for _, tc := range testCases {
-		tc := tc
-
-		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			mockHTTPClient := client.NewMockHTTPClient(ctrl)
-			gClient, err := client.New(testAPIKey, client.WithHTTPClient(mockHTTPClient))
-			assert.NoError(t, err)
-
-			if tc.expect != nil {
-				tc.expect(t, mockHTTPClient)
-			}
-
-			acct, err := gClient.Account()
-			assert.Equal(t, tc.want.err, err)
-			assert.Equal(t, tc.want.resp, acct)
 		})
 	}
 }
