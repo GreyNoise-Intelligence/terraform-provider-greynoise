@@ -42,3 +42,10 @@ resource "greynoise_sensor_bootstrap" "this" {
     on_failure = continue
   }
 }
+
+resource "greynoise_sensor_persona" "this" {
+  sensor_filter = {
+    public_ip = var.sensor_ip
+  }
+  persona_id = data.greynoise_personas.rdp[0].id
+}

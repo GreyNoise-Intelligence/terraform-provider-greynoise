@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package provider
 
 import (
@@ -20,7 +17,6 @@ const (
 	SSHPortMax = 65535
 )
 
-// Ensure provider defined types fully satisfy framework interfaces.
 var _ resource.Resource = &SensorBootstrapResource{}
 var _ resource.ResourceWithImportState = &SensorBootstrapResource{}
 
@@ -28,12 +24,10 @@ func NewSensorBootstrapResource() resource.Resource {
 	return &SensorBootstrapResource{}
 }
 
-// SensorBootstrapResource defines the resource implementation.
 type SensorBootstrapResource struct {
 	data *Data
 }
 
-// SensorBootstrapResourceModel describes the resource data model.
 type SensorBootstrapResourceModel struct {
 	PublicIP        types.String `tfsdk:"public_ip"`
 	InternalIP      types.String `tfsdk:"internal_ip"`
