@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -437,6 +438,182 @@ func TestGreyNoiseClient_PersonasSearch(t *testing.T) {
 			assert.NoError(t, err)
 
 			response, err := gClient.PersonasSearch(tc.input)
+			assert.Equal(t, tc.want.response, response)
+			assert.Equal(t, tc.want.err, err)
+		})
+	}
+}
+
+func TestGreyNoiseClient_GetSensor(t *testing.T) {
+	testAPIKey := "test-2037403284"
+	testSensor := &client.Sensor{
+		ID:   "1d6aed11-f2de-48f9-9526-8fb72be10700",
+		Name: "Gifted Trout",
+		PublicIps: []string{
+			"159.223.200.217",
+		},
+		Persona:   "501c5e5a-cf2e-4401-844a-04d4391b1332",
+		Status:    "healthy",
+		Disabled:  false,
+		LastSeen:  time.Date(2024, 8, 27, 16, 27, 2, 0, time.UTC),
+		CreatedAt: time.Date(2024, 8, 10, 3, 2, 22, 0, time.UTC),
+		UpdatedAt: time.Date(2024, 8, 26, 13, 53, 07, 0, time.UTC),
+	}
+
+	testAccountJSON := `
+{
+  "user_id": "4c65d8a0-ed21-417e-a1a2-65a4e09c3144",
+  "workspace_id": "7c65d8a0-ed21-417e-a1a2-65a4e09c3144"
+}`
+	testSensorJSON := `
+{
+  "sensor_id": "1d6aed11-f2de-48f9-9526-8fb72be10700",
+  "name": "Gifted Trout",
+  "public_ips": [
+    "159.223.200.217"
+  ],
+  "persona": "501c5e5a-cf2e-4401-844a-04d4391b1332",
+  "status": "healthy",
+  "disabled": false,
+  "last_seen": "2024-08-27T16:27:02Z",
+  "created_at": "2024-08-10T03:02:22Z",
+  "updated_at": "2024-08-26T13:53:07Z"
+}`
+
+	mockAccount := func(t *testing.T, httpClient *client.MockHTTPClient) {
+		httpClient.EXPECT().
+			Do(gomock.Any()).
+			DoAndReturn(func(req *http.Request) (*http.Response, error) {
+				assert.Equal(t, req.Method, http.MethodGet)
+				assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
+				assert.Equal(t, "https://api.greynoise.io/v1/account", req.URL.String())
+
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       responseBody(testAccountJSON),
+				}, nil
+			})
+	}
+
+	type want struct {
+		response *client.Sensor
+		err      error
+	}
+
+	testCases := []struct {
+		name   string
+		input  string
+		expect func(*testing.T, *client.MockHTTPClient)
+		want   want
+	}{
+		{
+			name:  "happy path",
+			input: "ac65d8a0-ed21-417e-a1a2-65a4e09c3144",
+			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
+				httpClient.EXPECT().
+					Do(gomock.Any()).
+					DoAndReturn(func(req *http.Request) (*http.Response, error) {
+						assert.Equal(t, req.Method, http.MethodGet)
+						assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
+						assert.Equal(t, "https://api.greynoise.io/v1/workspaces/"+
+							"7c65d8a0-ed21-417e-a1a2-65a4e09c3144/sensors/ac65d8a0-ed21-417e-a1a2-65a4e09c3144",
+							req.URL.String())
+
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							Body:       responseBody(testSensorJSON),
+						}, nil
+					})
+			},
+			want: want{
+				response: testSensor,
+			},
+		},
+		{
+			name:  "http client error",
+			input: "bc65d8a0-ed21-417e-a1a2-65a4e09c3144",
+			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
+				httpClient.EXPECT().
+					Do(gomock.Any()).
+					DoAndReturn(func(req *http.Request) (*http.Response, error) {
+						assert.Equal(t, req.Method, http.MethodGet)
+						assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
+						assert.Equal(t, "https://api.greynoise.io/v1/workspaces/"+
+							"7c65d8a0-ed21-417e-a1a2-65a4e09c3144/sensors/bc65d8a0-ed21-417e-a1a2-65a4e09c3144",
+							req.URL.String())
+
+						return nil, errors.New("http error")
+					})
+			},
+			want: want{
+				err: errors.New("http error"),
+			},
+		},
+		{
+			name:  "invalid response body",
+			input: "cc65d8a0-ed21-417e-a1a2-65a4e09c3144",
+			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
+				httpClient.EXPECT().
+					Do(gomock.Any()).
+					DoAndReturn(func(req *http.Request) (*http.Response, error) {
+						assert.Equal(t, req.Method, http.MethodGet)
+						assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
+						assert.Equal(t, "https://api.greynoise.io/v1/workspaces/"+
+							"7c65d8a0-ed21-417e-a1a2-65a4e09c3144/sensors/cc65d8a0-ed21-417e-a1a2-65a4e09c3144",
+							req.URL.String())
+
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							Body:       responseBody(`{`),
+						}, nil
+					})
+			},
+			want: want{
+				err: errors.New("unexpected EOF"),
+			},
+		},
+		{
+			name:  "unexpected status code",
+			input: "dc65d8a0-ed21-417e-a1a2-65a4e09c3144",
+			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
+				httpClient.EXPECT().
+					Do(gomock.Any()).
+					DoAndReturn(func(req *http.Request) (*http.Response, error) {
+						assert.Equal(t, req.Method, http.MethodGet)
+						assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
+						assert.Equal(t, "https://api.greynoise.io/v1/workspaces/"+
+							"7c65d8a0-ed21-417e-a1a2-65a4e09c3144/sensors/dc65d8a0-ed21-417e-a1a2-65a4e09c3144",
+							req.URL.String())
+
+						return &http.Response{
+							StatusCode: http.StatusForbidden,
+							Body:       responseBody(``),
+						}, nil
+					})
+			},
+			want: want{
+				err: client.NewErrUnexpectedStatusCode(http.StatusOK, http.StatusForbidden),
+			},
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockHTTPClient := client.NewMockHTTPClient(ctrl)
+			mockAccount(t, mockHTTPClient)
+
+			if tc.expect != nil {
+				tc.expect(t, mockHTTPClient)
+			}
+
+			gClient, err := client.New(testAPIKey, client.WithHTTPClient(mockHTTPClient))
+			assert.NoError(t, err)
+
+			response, err := gClient.GetSensor(tc.input)
 			assert.Equal(t, tc.want.response, response)
 			assert.Equal(t, tc.want.err, err)
 		})

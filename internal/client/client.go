@@ -189,6 +189,36 @@ func (c *GreyNoiseClient) GetPersona(id string) (*Persona, error) {
 	return &result, nil
 }
 
+func (c *GreyNoiseClient) GetSensor(id string) (*Sensor, error) {
+	u := c.baseURL.ResolveReference(&url.URL{Path: fmt.Sprintf("/v1/workspaces/%s/sensors/%s",
+		c.WorkspaceID(), id)})
+	u.Query().Add("include_disabled", "true")
+
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	c.setAuthHeader(req)
+	c.setJSONContentHeaders(req)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, NewErrUnexpectedStatusCode(http.StatusOK, resp.StatusCode)
+	}
+
+	var result Sensor
+	if err = json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
 func (c *GreyNoiseClient) SensorBootstrapURL() *url.URL {
 	return c.baseURL.ResolveReference(&url.URL{
 		Path: fmt.Sprintf("/v1/workspaces/%s/sensors/bootstrap/script", c.WorkspaceID()),
