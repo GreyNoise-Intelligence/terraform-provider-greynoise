@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	sshPortMin = 55000
-	sshPortMax = 65535
+	SSHPortMin = 55000
+	SSHPortMax = 65535
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -121,7 +121,7 @@ func (r *SensorBootstrapResource) Create(ctx context.Context, req resource.Creat
 		internalIPArg = fmt.Sprintf("-i %v ", data.InternalIP.ValueString())
 	}
 	if data.SSHPort.IsNull() {
-		sshPort := rand.Int32N(sshPortMax-sshPortMin) + sshPortMin
+		sshPort := rand.Int32N(SSHPortMax-SSHPortMin) + SSHPortMin
 		data.SSHPortSelected = types.Int32Value(sshPort)
 	} else {
 		data.SSHPortSelected = data.SSHPort
