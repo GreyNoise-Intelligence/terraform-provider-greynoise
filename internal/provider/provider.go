@@ -24,15 +24,10 @@ const (
 var _ provider.Provider = &GreyNoiseProvider{}
 var _ provider.ProviderWithFunctions = &GreyNoiseProvider{}
 
-// GreyNoiseProvider defines the provider implementation.
 type GreyNoiseProvider struct {
-	// version is set to the provider version on release, "dev" when the
-	// provider is built and ran locally, and "test" when running acceptance
-	// testing.
 	version string
 }
 
-// GreyNoiseProviderModel describes the provider data model.
 type GreyNoiseProviderModel struct {
 	BaseURL types.String `tfsdk:"base_url"`
 	APIKey  types.String `tfsdk:"api_key"`
@@ -129,7 +124,6 @@ func (p *GreyNoiseProvider) Resources(_ context.Context) []func() resource.Resou
 
 func (p *GreyNoiseProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewPersonaDataSource,
 		NewPersonasDataSource,
 	}
 }

@@ -59,7 +59,7 @@ func New(apiKey string, options ...Option) (*GreyNoiseClient, error) {
 		client.httpClient = httpClient
 	}
 
-	acct, err := client.Account()
+	acct, err := client.getAccount()
 	if err != nil {
 		return nil, fmt.Errorf("account error: %w", err)
 	}
@@ -82,7 +82,7 @@ type Account struct {
 	WorkspaceID uuid.UUID `json:"workspace_id"`
 }
 
-func (c *GreyNoiseClient) Account() (*Account, error) {
+func (c *GreyNoiseClient) getAccount() (*Account, error) {
 	u := c.baseURL.ResolveReference(&url.URL{Path: "/v1/account"})
 
 	req, err := http.NewRequest("GET", u.String(), nil)
