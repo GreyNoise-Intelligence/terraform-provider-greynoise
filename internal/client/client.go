@@ -139,6 +139,7 @@ func (c *GreyNoiseClient) GetPersona(id string) (*Persona, error) {
 }
 
 func (c *GreyNoiseClient) PersonasSearch(filters PersonaSearchFilters) (*PersonaSearchResponse, error) {
+	filters.Workspace = c.WorkspaceID().String()
 	if err := filters.Validate(); err != nil {
 		return nil, err
 	}
@@ -218,12 +219,16 @@ func (c *GreyNoiseClient) GetSensor(id string) (*Sensor, error) {
 	return &result, nil
 }
 
-func (c *GreyNoiseClient) SensorsSearch(filters PersonaSearchFilters) (*PersonaSearchResponse, error) {
+func (c *GreyNoiseClient) SensorsSearch(filters SensorSearchFilter) (*SensorSearchResponse, error) {
+	if filters.SortBy == "" {
+		filters.SortBy = SensorSortByCreatedAt
+	}
+
 	if err := filters.Validate(); err != nil {
 		return nil, err
 	}
 
-	u := c.baseURL.ResolveReference(&url.URL{Path: "/v1/personas"})
+	u := c.baseURL.ResolveReference(&url.URL{Path: fmt.Sprintf("/v1/workspaces/%s/sensors", c.WorkspaceID())})
 	q := u.Query()
 
 	if filters.PageSize == 0 {
@@ -249,6 +254,7 @@ func (c *GreyNoiseClient) SensorsSearch(filters PersonaSearchFilters) (*PersonaS
 	}
 
 	req.URL.RawQuery = q.Encode()
+
 	c.setAuthHeader(req)
 	c.setJSONContentHeaders(req)
 
@@ -261,7 +267,7 @@ func (c *GreyNoiseClient) SensorsSearch(filters PersonaSearchFilters) (*PersonaS
 		return nil, NewErrUnexpectedStatusCode(http.StatusOK, resp.StatusCode)
 	}
 
-	var result PersonaSearchResponse
+	var result SensorSearchResponse
 	if err = json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}

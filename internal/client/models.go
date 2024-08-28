@@ -4,10 +4,44 @@ import (
 	"time"
 )
 
+type SensorSortBy string
+
+const (
+	SensorSortByName      = SensorSortBy("name")
+	SensorSortByIP        = SensorSortBy("public_ips")
+	SensorSortByPort      = SensorSortBy("access_port")
+	SensorSortByPersona   = SensorSortBy("persona_name")
+	SensorSortByCreatedAt = SensorSortBy("created_at")
+	SensorSortByStatus    = SensorSortBy("status")
+)
+
 type Pagination struct {
 	Page       int32 `json:"page"`
 	PageSize   int32 `json:"page_size"`
 	TotalItems int32 `json:"total_items"`
+}
+
+type SensorSearchFilter struct {
+	Filter     string       `mapstructure:"filter"`
+	Page       int32        `mapstructure:"page"`
+	PageSize   int32        `mapstructure:"page_size"`
+	SortBy     SensorSortBy `mapstructure:"sort_by"`
+	Descending bool         `mapstructure:"descending"`
+}
+
+func (f *SensorSearchFilter) Validate() error {
+	switch f.SortBy {
+	case SensorSortByStatus, SensorSortByCreatedAt, SensorSortByIP, SensorSortByName, SensorSortByPersona,
+		SensorSortByPort:
+	default:
+		return NewErrInvalidField("sort_by", "unknown")
+	}
+
+	if f.Filter == "" {
+		return NewErrMissingField("filter")
+	}
+
+	return nil
 }
 
 type PersonaSearchFilters struct {
@@ -48,6 +82,11 @@ type Persona struct {
 
 type PersonaSearchResponse struct {
 	Items      []Persona  `json:"items"`
+	Pagination Pagination `json:"pagination"`
+}
+
+type SensorSearchResponse struct {
+	Items      []Sensor   `json:"items"`
 	Pagination Pagination `json:"pagination"`
 }
 
