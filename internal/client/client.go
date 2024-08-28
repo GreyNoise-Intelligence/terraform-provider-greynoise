@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -274,6 +275,42 @@ func (c *GreyNoiseClient) SensorsSearch(ctx context.Context, filters SensorSearc
 	}
 
 	return &result, nil
+}
+
+func (c *GreyNoiseClient) ApplyPersona(ctx context.Context, sensorID string,
+	personaID string) error {
+	type applyPersonaRequest struct {
+		Persona string `json:"persona"`
+	}
+
+	u := c.baseURL.ResolveReference(&url.URL{Path: fmt.Sprintf("/v1/workspaces/%s/sensors/%s",
+		c.WorkspaceID(), sensorID)})
+
+	body, err := json.Marshal(applyPersonaRequest{
+		Persona: personaID,
+	})
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "PUT", u.String(), bytes.NewBuffer(body))
+	if err != nil {
+		return err
+	}
+
+	c.setAuthHeader(req)
+	c.setJSONContentHeaders(req)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusAccepted {
+		return NewErrUnexpectedStatusCode(http.StatusAccepted, resp.StatusCode)
+	}
+
+	return nil
 }
 
 func (c *GreyNoiseClient) SensorBootstrapURL() *url.URL {
