@@ -808,6 +808,142 @@ func TestGreyNoiseClient_SensorSearch(t *testing.T) {
 	}
 }
 
+func TestGreyNoiseClient_ApplyPersona(t *testing.T) {
+	testAPIKey := "test-7037403284"
+	testAccountJSON := `
+{
+  "user_id": "4c65d8a0-ed21-417e-a1a2-65a4e09c3144",
+  "workspace_id": "7c65d8a0-ed21-417e-a1a2-65a4e09c3144"
+}`
+
+	mockAccount := func(t *testing.T, httpClient *client.MockHTTPClient) {
+		httpClient.EXPECT().
+			Do(gomock.Any()).
+			DoAndReturn(func(req *http.Request) (*http.Response, error) {
+				assert.Equal(t, req.Method, http.MethodGet)
+				assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
+				assert.Equal(t, "https://api.greynoise.io/v1/account", req.URL.String())
+
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       responseBody(testAccountJSON),
+				}, nil
+			})
+	}
+
+	type input struct {
+		sensorID  string
+		personaID string
+	}
+
+	testCases := []struct {
+		name   string
+		input  input
+		expect func(*testing.T, *client.MockHTTPClient)
+		want   error
+	}{
+		{
+			name: "happy path",
+			input: input{
+				sensorID:  "ac65d8a0-ed21-417e-a1a2-65a4e09c3144",
+				personaID: "6446a1df-8708-4bf2-9346-6f9dd186cd71",
+			},
+			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
+				httpClient.EXPECT().
+					Do(gomock.Any()).
+					DoAndReturn(func(req *http.Request) (*http.Response, error) {
+						assert.Equal(t, req.Method, http.MethodPut)
+						assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
+						assert.Equal(t, "https://api.greynoise.io/v1/workspaces/"+
+							"7c65d8a0-ed21-417e-a1a2-65a4e09c3144/sensors/ac65d8a0-ed21-417e-a1a2-65a4e09c3144",
+							req.URL.String())
+
+						body, err := io.ReadAll(req.Body)
+						assert.NoError(t, err)
+						assert.JSONEq(t, `{"persona": "6446a1df-8708-4bf2-9346-6f9dd186cd71"}`, string(body))
+
+						return &http.Response{
+							StatusCode: http.StatusAccepted,
+						}, nil
+					})
+			},
+		},
+		{
+			name: "http client error",
+			input: input{
+				sensorID:  "ac65d8a0-ed21-417e-a1a2-65a4e09c3144",
+				personaID: "bc65d8a0-ed21-417e-a1a2-65a4e09c3144",
+			},
+			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
+				httpClient.EXPECT().
+					Do(gomock.Any()).
+					DoAndReturn(func(req *http.Request) (*http.Response, error) {
+						assert.Equal(t, req.Method, http.MethodPut)
+						assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
+						assert.Equal(t, "https://api.greynoise.io/v1/workspaces/"+
+							"7c65d8a0-ed21-417e-a1a2-65a4e09c3144/sensors/ac65d8a0-ed21-417e-a1a2-65a4e09c3144",
+							req.URL.String())
+
+						body, err := io.ReadAll(req.Body)
+						assert.NoError(t, err)
+						assert.JSONEq(t, `{"persona": "bc65d8a0-ed21-417e-a1a2-65a4e09c3144"}`, string(body))
+
+						return nil, errors.New("http error")
+					})
+			},
+			want: errors.New("http error"),
+		},
+		{
+			name: "unexpected status code",
+			input: input{
+				sensorID:  "cc65d8a0-ed21-417e-a1a2-65a4e09c3144",
+				personaID: "bc65d8a0-ed21-417e-a1a2-65a4e09c3144",
+			},
+			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
+				httpClient.EXPECT().
+					Do(gomock.Any()).
+					DoAndReturn(func(req *http.Request) (*http.Response, error) {
+						assert.Equal(t, req.Method, http.MethodPut)
+						assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
+						assert.Equal(t, "https://api.greynoise.io/v1/workspaces/"+
+							"7c65d8a0-ed21-417e-a1a2-65a4e09c3144/sensors/cc65d8a0-ed21-417e-a1a2-65a4e09c3144",
+							req.URL.String())
+
+						body, err := io.ReadAll(req.Body)
+						assert.NoError(t, err)
+						assert.JSONEq(t, `{"persona": "bc65d8a0-ed21-417e-a1a2-65a4e09c3144"}`, string(body))
+
+						return &http.Response{
+							StatusCode: http.StatusInternalServerError,
+						}, nil
+					})
+			},
+			want: client.NewErrUnexpectedStatusCode(http.StatusAccepted, http.StatusInternalServerError),
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockHTTPClient := client.NewMockHTTPClient(ctrl)
+			mockAccount(t, mockHTTPClient)
+
+			if tc.expect != nil {
+				tc.expect(t, mockHTTPClient)
+			}
+
+			gClient, err := client.New(testAPIKey, client.WithHTTPClient(mockHTTPClient))
+			assert.NoError(t, err)
+
+			err = gClient.ApplyPersona(context.Background(), tc.input.sensorID, tc.input.personaID)
+			assert.Equal(t, tc.want, err)
+		})
+	}
+}
+
 func responseBody(body string) io.ReadCloser {
 	return io.NopCloser(strings.NewReader(body))
 }
