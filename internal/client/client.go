@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -110,10 +111,10 @@ func (c *GreyNoiseClient) getAccount() (*Account, error) {
 	return &result, nil
 }
 
-func (c *GreyNoiseClient) GetPersona(id string) (*Persona, error) {
+func (c *GreyNoiseClient) GetPersona(ctx context.Context, id string) (*Persona, error) {
 	u := c.baseURL.ResolveReference(&url.URL{Path: fmt.Sprintf("/v1/personas/%s", id)})
 
-	req, err := http.NewRequest("GET", u.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +139,7 @@ func (c *GreyNoiseClient) GetPersona(id string) (*Persona, error) {
 	return &result, nil
 }
 
-func (c *GreyNoiseClient) PersonasSearch(filters PersonaSearchFilters) (*PersonaSearchResponse, error) {
+func (c *GreyNoiseClient) PersonasSearch(ctx context.Context, filters PersonaSearchFilters) (*PersonaSearchResponse, error) {
 	filters.Workspace = c.WorkspaceID().String()
 	if err := filters.Validate(); err != nil {
 		return nil, err
@@ -164,7 +165,7 @@ func (c *GreyNoiseClient) PersonasSearch(filters PersonaSearchFilters) (*Persona
 		}
 	}
 
-	req, err := http.NewRequest("GET", u.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -190,11 +191,11 @@ func (c *GreyNoiseClient) PersonasSearch(filters PersonaSearchFilters) (*Persona
 	return &result, nil
 }
 
-func (c *GreyNoiseClient) GetSensor(id string) (*Sensor, error) {
+func (c *GreyNoiseClient) GetSensor(ctx context.Context, id string) (*Sensor, error) {
 	u := c.baseURL.ResolveReference(&url.URL{Path: fmt.Sprintf("/v1/workspaces/%s/sensors/%s",
 		c.WorkspaceID(), id)})
 
-	req, err := http.NewRequest("GET", u.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +220,7 @@ func (c *GreyNoiseClient) GetSensor(id string) (*Sensor, error) {
 	return &result, nil
 }
 
-func (c *GreyNoiseClient) SensorsSearch(filters SensorSearchFilter) (*SensorSearchResponse, error) {
+func (c *GreyNoiseClient) SensorsSearch(ctx context.Context, filters SensorSearchFilter) (*SensorSearchResponse, error) {
 	if filters.SortBy == "" {
 		filters.SortBy = SensorSortByCreatedAt
 	}
@@ -248,7 +249,7 @@ func (c *GreyNoiseClient) SensorsSearch(filters SensorSearchFilter) (*SensorSear
 		}
 	}
 
-	req, err := http.NewRequest("GET", u.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}

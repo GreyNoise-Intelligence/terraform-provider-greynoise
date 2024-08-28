@@ -1,6 +1,7 @@
 package client_test
 
 import (
+	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -193,7 +194,7 @@ func TestGreyNoiseClient_GetPersona(t *testing.T) {
 			gClient, err := client.New(testAPIKey, client.WithHTTPClient(mockHTTPClient))
 			assert.NoError(t, err)
 
-			response, err := gClient.GetPersona(tc.input)
+			response, err := gClient.GetPersona(context.Background(), tc.input)
 			assert.Equal(t, tc.want.response, response)
 			assert.Equal(t, tc.want.err, err)
 		})
@@ -409,7 +410,7 @@ func TestGreyNoiseClient_PersonasSearch(t *testing.T) {
 			gClient, err := client.New(testAPIKey, client.WithHTTPClient(mockHTTPClient))
 			assert.NoError(t, err)
 
-			response, err := gClient.PersonasSearch(tc.input)
+			response, err := gClient.PersonasSearch(context.Background(), tc.input)
 			assert.Equal(t, tc.want.response, response)
 			assert.Equal(t, tc.want.err, err)
 		})
@@ -585,7 +586,7 @@ func TestGreyNoiseClient_GetSensor(t *testing.T) {
 			gClient, err := client.New(testAPIKey, client.WithHTTPClient(mockHTTPClient))
 			assert.NoError(t, err)
 
-			response, err := gClient.GetSensor(tc.input)
+			response, err := gClient.GetSensor(context.Background(), tc.input)
 			assert.Equal(t, tc.want.response, response)
 			assert.Equal(t, tc.want.err, err)
 		})
@@ -800,7 +801,7 @@ func TestGreyNoiseClient_SensorSearch(t *testing.T) {
 			gClient, err := client.New(testAPIKey, client.WithHTTPClient(mockHTTPClient))
 			assert.NoError(t, err)
 
-			response, err := gClient.SensorsSearch(tc.input)
+			response, err := gClient.SensorsSearch(context.Background(), tc.input)
 			assert.Equal(t, tc.want.response, response)
 			assert.Equal(t, tc.want.err, err)
 		})
