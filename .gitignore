@@ -4,3 +4,4 @@
 **/.terraform/*
 **/.greynoise-tf-infra-breadcrumb*
 **/.terraform.lock.hcl
+terraform.tfstate*

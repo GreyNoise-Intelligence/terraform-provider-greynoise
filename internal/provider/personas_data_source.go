@@ -95,9 +95,9 @@ func (d *PersonasDataSource) Configure(_ context.Context, req datasource.Configu
 }
 
 func (d *PersonasDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var config PersonasDataSourceModel
+	var data PersonasDataSourceModel
 
-	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -105,11 +105,11 @@ func (d *PersonasDataSource) Read(ctx context.Context, req datasource.ReadReques
 	// Search and process results
 	result, err := d.data.Client.PersonasSearch(ctx, client.PersonaSearchFilters{
 		Workspace:  d.data.Client.WorkspaceID().String(),
-		Tiers:      config.Tier.ValueString(),
-		Categories: config.Category.ValueString(),
-		Protocols:  config.Category.ValueString(),
-		Search:     config.Search.ValueString(),
-		PageSize:   config.Limit.ValueInt32(),
+		Tiers:      data.Tier.ValueString(),
+		Categories: data.Category.ValueString(),
+		Protocols:  data.Category.ValueString(),
+		Search:     data.Search.ValueString(),
+		PageSize:   data.Limit.ValueInt32(),
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -128,11 +128,11 @@ func (d *PersonasDataSource) Read(ctx context.Context, req datasource.ReadReques
 	// Set computed attributes
 	personaIDsList, diags := types.ListValueFrom(ctx, types.StringType, personaIDs)
 	resp.Diagnostics.Append(diags...)
-	config.IDs = personaIDsList
+	data.IDs = personaIDsList
 
 	total := types.Int32Value(result.Pagination.TotalItems)
-	config.Total = total
+	data.Total = total
 
-	tflog.Trace(ctx, "read personas data source")
-	resp.Diagnostics.Append(resp.State.Set(ctx, &config)...)
+	tflog.Trace(ctx, "Read personas data source")
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
