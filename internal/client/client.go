@@ -129,6 +129,10 @@ func (c *GreyNoiseClient) GetPersona(ctx context.Context, id string) (*Persona, 
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusNotFound {
+			return nil, ErrNotFound
+		}
+
 		return nil, NewErrUnexpectedStatusCode(http.StatusOK, resp.StatusCode)
 	}
 
@@ -210,6 +214,10 @@ func (c *GreyNoiseClient) GetSensor(ctx context.Context, id string) (*Sensor, er
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusNotFound {
+			return nil, ErrNotFound
+		}
+
 		return nil, NewErrUnexpectedStatusCode(http.StatusOK, resp.StatusCode)
 	}
 
