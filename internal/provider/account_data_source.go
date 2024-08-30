@@ -67,16 +67,16 @@ func (d *AccountDataSource) Configure(_ context.Context, req datasource.Configur
 }
 
 func (d *AccountDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var config AccountDataSourceModel
+	var data AccountDataSourceModel
 
-	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	config.UserID = types.StringValue(d.data.Client.UserID().String())
-	config.WorkspaceID = types.StringValue(d.data.Client.WorkspaceID().String())
+	data.UserID = types.StringValue(d.data.Client.UserID().String())
+	data.WorkspaceID = types.StringValue(d.data.Client.WorkspaceID().String())
 
-	tflog.Trace(ctx, "read account data source")
-	resp.Diagnostics.Append(resp.State.Set(ctx, &config)...)
+	tflog.Trace(ctx, "Read account data source")
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
