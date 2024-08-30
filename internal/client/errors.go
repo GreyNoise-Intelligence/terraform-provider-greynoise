@@ -1,8 +1,11 @@
 package client
 
 import (
+	"errors"
 	"fmt"
 )
+
+var ErrNotFound = errors.New("not found")
 
 // ErrUnexpectedStatusCode is an error type that is returned when a status code does not match an expected one.
 type ErrUnexpectedStatusCode struct {
