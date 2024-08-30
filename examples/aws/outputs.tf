@@ -5,9 +5,10 @@ output "personas" {
   }
 }
 
-output "sensor_bootstrap" {
-  description = "Sensor bootstrap parameters"
+output "sensor" {
+  description = "Sensor information"
   value       = {
-    ssh_port = greynoise_sensor_bootstrap.this.ssh_port_selected
+    public_ip = aws_instance.this.public_ip
+    ssh_port  = greynoise_sensor_bootstrap.this.ssh_port_selected
   }
 }
