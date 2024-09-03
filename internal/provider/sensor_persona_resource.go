@@ -35,14 +35,14 @@ func (r *SensorPersonaResource) Metadata(_ context.Context, req resource.Metadat
 
 func (r *SensorPersonaResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Sensor persona resource is used to manage the persona deployed to a sensor.",
+		MarkdownDescription: `Sensor persona resource is used to manage the persona deployed to a sensor.`,
 		Attributes: map[string]schema.Attribute{
 			"persona_id": schema.StringAttribute{
-				MarkdownDescription: "Persona ID for sensor update",
+				MarkdownDescription: "Persona ID for sensor update.",
 				Required:            true,
 			},
 			"sensor_id": schema.StringAttribute{
-				MarkdownDescription: "ID of the sensor",
+				MarkdownDescription: "UUID of the sensor.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),

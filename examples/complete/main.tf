@@ -1,4 +1,21 @@
-# --- providers ---
+# -- inputs ---
+variable "vpc" {
+  description = "VPC parameters"
+  type        = object({
+    vpc_id    = string
+    subnet_id = string
+  })
+}
+
+variable "key_pair" {
+  description = "Key pair for EC2 instance SSH"
+  type        = object({
+    name        = string
+    private_key_file = string
+  })
+}
+
+# -- providers ---
 terraform {
   required_providers {
     greynoise = {
@@ -28,7 +45,7 @@ provider "greynoise" {
   // GN_API_KEY env var is used to provide key
 }
 
-# --- AWS instance ---
+# -- main ---
 locals {
   name = "greynoise-tf-provider"
 }
@@ -89,7 +106,6 @@ resource "aws_instance" "this" {
   ]
 }
 
-# --- GreyNoise sensor deployment ---
 data "greynoise_personas" "rdp" {
   search = "rdp"
   limit  = 1
@@ -114,6 +130,7 @@ resource "greynoise_sensor_bootstrap" "this" {
 
   provisioner "remote-exec" {
     inline = [
+      # ensure that script can run by waiting for cloud-init to complete
       "cloud-init status --wait > /dev/null",
       self.bootstrap_script,
     ]
@@ -130,7 +147,23 @@ data "greynoise_sensor" "this" {
   ]
 }
 
+# -- outputs --
 resource "greynoise_sensor_persona" "this" {
   sensor_id  = data.greynoise_sensor.this.id
   persona_id = data.greynoise_personas.rdp.ids[0]
+}
+
+output "personas" {
+  description = "RDP personas"
+  value       = {
+    ids = data.greynoise_personas.rdp.ids
+  }
+}
+
+output "sensor" {
+  description = "Sensor information"
+  value       = {
+    public_ip = aws_instance.this.public_ip
+    ssh_port  = greynoise_sensor_bootstrap.this.ssh_port_selected
+  }
 }

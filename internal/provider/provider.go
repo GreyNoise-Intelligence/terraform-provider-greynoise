@@ -42,12 +42,12 @@ func (p *GreyNoiseProvider) Schema(_ context.Context, req provider.SchemaRequest
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"api_key": schema.StringAttribute{
-				MarkdownDescription: "GreyNoise API Key",
+				MarkdownDescription: "GreyNoise API Key.",
 				Optional:            true,
 				Sensitive:           true,
 			},
 			"base_url": schema.StringAttribute{
-				MarkdownDescription: "GreyNoise API Base URL",
+				MarkdownDescription: "GreyNoise API Base URL.",
 				Optional:            true,
 			},
 		},

@@ -1,0 +1,28 @@
+---
+page_title: "Provider: GreyNoise"
+description: |-
+  The GreyNoise provider is used to interact with GreyNoise resources.
+---
+
+# GreyNoise Provider
+
+Use the "greynoise" provider to interact with GreyNoise resources, for example to manage the deployment of sensors and personas.
+
+Authentication is done via the GreyNoise API key which is available on
+the [My API Key](https://viz.greynoise.io/account/api-key) in the Visualizer.
+
+The API key can be specified in the configuration via `api_key` or using the environment variable `GN_API_KEY`.
+
+## Example Usage:
+
+{{ tffile .ExampleFile }}
+
+For the Greynoise API key, it is preferred to use the environment variable to avoid hard-coding secrets in the configuration.
+
+{{- .SchemaMarkdown -}}
+
+## Complete Example
+
+A complete example using AWS is shown below. In this example an EC2 instance is provisioned and bootstrapped as a GreyNoise sensor. Finally a persona of choice is configured for the sensor.
+
+{{ tffile "examples/complete/main.tf" }}

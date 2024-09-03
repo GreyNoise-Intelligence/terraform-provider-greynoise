@@ -38,35 +38,35 @@ func (d *PersonasDataSource) Metadata(_ context.Context, req datasource.Metadata
 
 func (d *PersonasDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Personas data source",
+		MarkdownDescription: `Personas data source is used to lookup existing GreyNoise personas (both private and public) using a combination of filters.`,
 		Attributes: map[string]schema.Attribute{
 			"category": schema.StringAttribute{
-				MarkdownDescription: "Category of persona",
+				MarkdownDescription: "Category of persona.",
 				Optional:            true,
 			},
 			"protocol": schema.StringAttribute{
-				MarkdownDescription: "Protocol of persona",
+				MarkdownDescription: "Protocol of persona.",
 				Optional:            true,
 			},
 			"search": schema.StringAttribute{
-				MarkdownDescription: "Partial text search on persona name",
+				MarkdownDescription: "Partial text search on persona name.",
 				Optional:            true,
 			},
 			"tier": schema.StringAttribute{
-				MarkdownDescription: "Tier of persona",
+				MarkdownDescription: "Tier of persona.",
 				Optional:            true,
 			},
 			"limit": schema.Int32Attribute{
-				MarkdownDescription: "Limit number of personas to return",
+				MarkdownDescription: "Limit number of personas to return.",
 				Optional:            true,
 			},
 			"ids": schema.ListAttribute{
 				ElementType:         types.StringType,
-				MarkdownDescription: "IDs of personas that match criteria",
+				MarkdownDescription: "IDs of personas that match criteria.",
 				Computed:            true,
 			},
 			"total": schema.Int32Attribute{
-				MarkdownDescription: "Number of matched personas",
+				MarkdownDescription: "Total number of matched personas.",
 				Computed:            true,
 			},
 		},

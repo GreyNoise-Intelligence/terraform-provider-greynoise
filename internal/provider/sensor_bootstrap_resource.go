@@ -45,35 +45,35 @@ func (r *SensorBootstrapResource) Metadata(_ context.Context, req resource.Metad
 
 func (r *SensorBootstrapResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Sensor bootstrap resource provides options to bootstrap a server. " +
-			"It generates a script that can be used with a `remote-exec` provisioner to setup a sensor on a server.",
+		MarkdownDescription: `Sensor bootstrap resource provides options to bootstrap a server.
+It generates a script that can be used with a "remote-exec" provisioner to setup a sensor on a server.`,
 		Attributes: map[string]schema.Attribute{
 			"public_ip": schema.StringAttribute{
-				MarkdownDescription: "Public IP of the server to bootstrap",
+				MarkdownDescription: "Public IP of the server to bootstrap.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"internal_ip": schema.StringAttribute{
-				MarkdownDescription: "Internal IP of the server to bootstrap",
+				MarkdownDescription: "Internal IP of the server to bootstrap.",
 				Optional:            true,
 			},
 			"setup_script": schema.StringAttribute{
-				MarkdownDescription: "Script that sets up the server environment",
+				MarkdownDescription: "Script that sets up the server environment.",
 				Sensitive:           true,
 				Computed:            true,
 			},
 			"bootstrap_script": schema.StringAttribute{
-				MarkdownDescription: "Script that can be run to boostrap a server",
+				MarkdownDescription: "Script that can be run to boostrap a server.",
 				Computed:            true,
 			},
 			"ssh_port": schema.Int32Attribute{
-				MarkdownDescription: "SSH port to configure after bootstrap. If not provided a random port is selected",
+				MarkdownDescription: "SSH port to configure after bootstrap. If not provided a random port is selected.",
 				Optional:            true,
 			},
 			"ssh_port_selected": schema.Int32Attribute{
-				MarkdownDescription: "SSH port selected - same as ssh_port if set, otherwise randomly selected port",
+				MarkdownDescription: "SSH port selected - same as ssh_port if set, otherwise randomly selected port.",
 				Computed:            true,
 			},
 		},

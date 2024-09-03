@@ -21,7 +21,7 @@ make testacc
 ### Local Development/Testing
 
 This repo provides a Docker-based environment so you don't have to install Terraform on your laptop.
-This environment can be used to run the [examples/aws](examples/aws). To get started perform the following
+This environment can be used to run the [examples/complete](examples/complete). To get started perform the following
 actions:
 
 1. Build the provider for the docker environment:

@@ -31,14 +31,14 @@ func (d *AccountDataSource) Metadata(_ context.Context, req datasource.MetadataR
 
 func (d *AccountDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Account data source",
+		MarkdownDescription: `Account provides information about the current account.`,
 		Attributes: map[string]schema.Attribute{
 			"user_id": schema.StringAttribute{
-				MarkdownDescription: "User ID of the account",
+				MarkdownDescription: "User ID of the account.",
 				Computed:            true,
 			},
 			"workspace_id": schema.StringAttribute{
-				MarkdownDescription: "Workspace ID of the account",
+				MarkdownDescription: "Workspace ID of the account.",
 				Computed:            true,
 			},
 		},

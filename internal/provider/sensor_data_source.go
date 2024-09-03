@@ -34,14 +34,14 @@ func (d *SensorDataSource) Metadata(_ context.Context, req datasource.MetadataRe
 
 func (d *SensorDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Sensor data source",
+		MarkdownDescription: `Sensor data source is used to lookup a sensor by public IP.`,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				MarkdownDescription: "Sensor ID",
+				MarkdownDescription: "Sensor UUID.",
 				Computed:            true,
 			},
 			"public_ip": schema.StringAttribute{
-				MarkdownDescription: "Sensor public IP",
+				MarkdownDescription: "Sensor public IP.",
 				Optional:            true,
 			},
 		},

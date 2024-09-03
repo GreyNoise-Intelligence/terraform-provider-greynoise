@@ -36,12 +36,13 @@ func TestAccSensorDataSource(t *testing.T) {
 	mockWorkspaceID := mockServer.Account.WorkspaceID.String()
 	mockAPIKey := mockServer.APIKey
 
-	mockServer.RegisterMatch(fmt.Sprintf("/v1/workspaces/%s/sensors", mockWorkspaceID),
+	mockServer.RegisterMatch(http.MethodGet,
+		fmt.Sprintf("/v1/workspaces/%s/sensors", mockWorkspaceID),
 		func(url *url.URL) bool {
 			return url.Query().Get("filter") == testSensor.PublicIps[0]
 		},
 		http.StatusOK,
-		client.SensorSearchResponse{
+		body(client.SensorSearchResponse{
 			Items: []client.Sensor{
 				testSensor,
 			},
@@ -50,10 +51,14 @@ func TestAccSensorDataSource(t *testing.T) {
 				PageSize:   2,
 				TotalItems: 1,
 			},
-		})
-	mockServer.Register(fmt.Sprintf("/v1/workspaces/%s/sensors/%s", mockWorkspaceID, testSensor.ID),
+		}),
+		nil,
+	)
+	mockServer.Register(http.MethodGet,
+		fmt.Sprintf("/v1/workspaces/%s/sensors/%s", mockWorkspaceID, testSensor.ID),
 		http.StatusOK,
-		testSensor,
+		body(testSensor),
+		nil,
 	)
 
 	server := mockServer.Server()
