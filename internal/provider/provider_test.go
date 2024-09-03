@@ -2,6 +2,7 @@ package provider
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -26,10 +27,12 @@ var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServe
 
 // mock API server
 type mockEndpoint struct {
-	path   string
-	match  func(*url.URL) bool
-	status int
-	body   interface{}
+	method   string
+	path     string
+	match    func(*url.URL) bool
+	status   int
+	body     func() interface{}
+	callback func(r *http.Request)
 }
 
 type mockAPIServer struct {
@@ -48,20 +51,26 @@ func defaultMockAPIServer() *mockAPIServer {
 	}
 }
 
-func (m *mockAPIServer) Register(path string, status int, body interface{}) {
+func (m *mockAPIServer) Register(method string, path string, status int, body func() interface{},
+	callback func(*http.Request)) {
 	m.mockEndpoints = append(m.mockEndpoints, mockEndpoint{
-		path:   path,
-		status: status,
-		body:   body,
+		method:   method,
+		path:     path,
+		status:   status,
+		body:     body,
+		callback: callback,
 	})
 }
 
-func (m *mockAPIServer) RegisterMatch(path string, match func(*url.URL) bool, status int, body interface{}) {
+func (m *mockAPIServer) RegisterMatch(method string, path string, match func(*url.URL) bool, status int,
+	body func() interface{}, callback func(*http.Request)) {
 	m.mockEndpoints = append(m.mockEndpoints, mockEndpoint{
-		path:   path,
-		status: status,
-		body:   body,
-		match:  match,
+		method:   method,
+		path:     path,
+		status:   status,
+		body:     body,
+		match:    match,
+		callback: callback,
 	})
 }
 
@@ -78,7 +87,7 @@ func (m *mockAPIServer) Server() *httptest.Server {
 			return
 		}
 
-		if path == "/v1/account" {
+		if path == "/v1/account" && r.Method == http.MethodGet {
 			w.Header().Set("Content-Type", "application/json")
 
 			w.WriteHeader(http.StatusOK)
@@ -88,7 +97,7 @@ func (m *mockAPIServer) Server() *httptest.Server {
 		}
 
 		for _, endpoint := range m.mockEndpoints {
-			if endpoint.path == path {
+			if endpoint.path == path && endpoint.method == r.Method {
 				if endpoint.match != nil && !endpoint.match(r.URL) {
 					continue
 				}
@@ -96,7 +105,11 @@ func (m *mockAPIServer) Server() *httptest.Server {
 				w.Header().Set("Content-Type", "application/json")
 
 				w.WriteHeader(endpoint.status)
-				_ = json.NewEncoder(w).Encode(endpoint.body)
+				_ = json.NewEncoder(w).Encode(endpoint.body())
+
+				if endpoint.callback != nil {
+					endpoint.callback(r)
+				}
 
 				return
 			}
@@ -106,4 +119,15 @@ func (m *mockAPIServer) Server() *httptest.Server {
 	}))
 
 	return server
+}
+
+func body(b interface{}) func() interface{} {
+	return func() interface{} {
+		fmt.Println("Returning body", b)
+		return b
+	}
+}
+
+func emptyBody() interface{} {
+	return nil
 }

@@ -16,12 +16,12 @@ func TestAccPersonasDataSource(t *testing.T) {
 	t.Parallel()
 
 	mockServer := defaultMockAPIServer()
-	mockServer.RegisterMatch("/v1/personas",
+	mockServer.RegisterMatch(http.MethodGet, "/v1/personas",
 		func(url *url.URL) bool {
 			return url.Query().Get("search") == "tomcat"
 		},
 		http.StatusOK,
-		client.PersonaSearchResponse{
+		body(client.PersonaSearchResponse{
 			Items: []client.Persona{
 				{
 					ID:                 "ac65d8a0-ed21-417e-a1a2-65a4e09c3144",
@@ -49,7 +49,9 @@ func TestAccPersonasDataSource(t *testing.T) {
 				PageSize:   2,
 				TotalItems: 1,
 			},
-		})
+		}),
+		nil,
+	)
 
 	server := mockServer.Server()
 

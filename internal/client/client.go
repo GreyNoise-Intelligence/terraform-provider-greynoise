@@ -285,16 +285,16 @@ func (c *GreyNoiseClient) SensorsSearch(ctx context.Context, filters SensorSearc
 	return &result, nil
 }
 
+type ApplyPersonaRequest struct {
+	Persona string `json:"persona"`
+}
+
 func (c *GreyNoiseClient) ApplyPersona(ctx context.Context, sensorID string,
 	personaID string) error {
-	type applyPersonaRequest struct {
-		Persona string `json:"persona"`
-	}
-
 	u := c.baseURL.ResolveReference(&url.URL{Path: fmt.Sprintf("/v1/workspaces/%s/sensors/%s",
 		c.WorkspaceID(), sensorID)})
 
-	body, err := json.Marshal(applyPersonaRequest{
+	body, err := json.Marshal(ApplyPersonaRequest{
 		Persona: personaID,
 	})
 	if err != nil {

@@ -114,6 +114,7 @@ resource "greynoise_sensor_bootstrap" "this" {
 
   provisioner "remote-exec" {
     inline = [
+      # ensure that script can run by waiting for cloud-init to complete
       "cloud-init status --wait > /dev/null",
       self.bootstrap_script,
     ]
