@@ -11,14 +11,14 @@ resource "greynoise_sensor_bootstrap" "this" {
 
   provisioner "remote-exec" {
     inline = [
+      # ensure that script can run by waiting for cloud-init to complete
+      "cloud-init status --wait > /dev/null",
       self.setup_script,
     ]
   }
 
   provisioner "remote-exec" {
     inline = [
-      # ensure that script can run by waiting for cloud-init to complete
-      "cloud-init status --wait > /dev/null",
       self.bootstrap_script,
     ]
     # failure is expected as SSH connection will be lost
