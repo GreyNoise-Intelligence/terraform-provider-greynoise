@@ -192,12 +192,12 @@ data "greynoise_sensor" "this" {
   ]
 }
 
-# -- outputs --
 resource "greynoise_sensor_persona" "this" {
   sensor_id  = data.greynoise_sensor.this.id
   persona_id = data.greynoise_personas.rdp.ids[0]
 }
 
+# -- outputs --
 output "personas" {
   description = "RDP personas"
   value = {

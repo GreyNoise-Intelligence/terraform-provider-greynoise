@@ -3,12 +3,12 @@
 page_title: "greynoise_personas Data Source - greynoise"
 subcategory: ""
 description: |-
-  Personas data source is used to lookup existing GreyNoise personas (both private and public) using a combination of filters.
+  Personas data source is used to lookup existing GreyNoise personas (both private and public) using a combination of filters. The list of personas can be found on the Visualizer Personas page https://viz.greynoise.io/sensors/personas.
 ---
 
 # greynoise_personas (Data Source)
 
-Personas data source is used to lookup existing GreyNoise personas (both private and public) using a combination of filters.
+Personas data source is used to lookup existing GreyNoise personas (both private and public) using a combination of filters. The list of personas can be found on the Visualizer [Personas page](https://viz.greynoise.io/sensors/personas).
 
 ## Example Usage
 

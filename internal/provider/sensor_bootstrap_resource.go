@@ -46,7 +46,7 @@ func (r *SensorBootstrapResource) Metadata(_ context.Context, req resource.Metad
 func (r *SensorBootstrapResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `Sensor bootstrap resource provides options to bootstrap a server.
-It generates a script that can be used with a "remote-exec" provisioner to setup a sensor on a server.`,
+It generates a script that can be used with a "remote-exec" provisioner to setup a GreyNoise sensor on a server.`,
 		Attributes: map[string]schema.Attribute{
 			"public_ip": schema.StringAttribute{
 				MarkdownDescription: "Public IP of the server to bootstrap.",

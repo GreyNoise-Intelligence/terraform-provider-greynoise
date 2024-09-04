@@ -4,13 +4,13 @@ page_title: "greynoise_sensor_bootstrap Resource - greynoise"
 subcategory: ""
 description: |-
   Sensor bootstrap resource provides options to bootstrap a server.
-  It generates a script that can be used with a "remote-exec" provisioner to setup a sensor on a server.
+  It generates a script that can be used with a "remote-exec" provisioner to setup a GreyNoise sensor on a server.
 ---
 
 # greynoise_sensor_bootstrap (Resource)
 
 Sensor bootstrap resource provides options to bootstrap a server.
-It generates a script that can be used with a "remote-exec" provisioner to setup a sensor on a server.
+It generates a script that can be used with a "remote-exec" provisioner to setup a GreyNoise sensor on a server.
 
 ## Example Usage
 

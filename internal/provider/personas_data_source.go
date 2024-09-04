@@ -38,7 +38,7 @@ func (d *PersonasDataSource) Metadata(_ context.Context, req datasource.Metadata
 
 func (d *PersonasDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: `Personas data source is used to lookup existing GreyNoise personas (both private and public) using a combination of filters.`,
+		MarkdownDescription: `Personas data source is used to lookup existing GreyNoise personas (both private and public) using a combination of filters. The list of personas can be found on the Visualizer [Personas page](https://viz.greynoise.io/sensors/personas).`,
 		Attributes: map[string]schema.Attribute{
 			"category": schema.StringAttribute{
 				MarkdownDescription: "Category of persona.",
