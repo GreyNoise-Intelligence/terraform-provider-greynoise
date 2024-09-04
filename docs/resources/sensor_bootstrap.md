@@ -16,7 +16,7 @@ It generates a script that can be used with a "remote-exec" provisioner to setup
 
 ```terraform
 resource "greynoise_sensor_bootstrap" "this" {
-  public_ip =  "44.13.34.10"
+  public_ip = "44.13.34.10"
 
   connection {
     host = "44.13.34.10"

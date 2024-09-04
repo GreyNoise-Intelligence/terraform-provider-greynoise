@@ -15,8 +15,8 @@ Personas data source is used to lookup existing GreyNoise personas (both private
 ```terraform
 data "greynoise_personas" "this" {
   category = "webserver"
-  search = "Ivanti"
-  limit = 1
+  search   = "Ivanti"
+  limit    = 1
 }
 ```
 

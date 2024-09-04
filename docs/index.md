@@ -46,7 +46,7 @@ A complete example using AWS is shown below. In this example an EC2 instance is 
 # -- inputs ---
 variable "vpc" {
   description = "VPC parameters"
-  type        = object({
+  type = object({
     vpc_id    = string
     subnet_id = string
   })
@@ -54,8 +54,8 @@ variable "vpc" {
 
 variable "key_pair" {
   description = "Key pair for EC2 instance SSH"
-  type        = object({
-    name        = string
+  type = object({
+    name             = string
     private_key_file = string
   })
 }
@@ -142,10 +142,10 @@ resource "aws_security_group" "this" {
 }
 
 resource "aws_instance" "this" {
-  ami             = data.aws_ami.ubuntu.id
-  subnet_id       = var.vpc.subnet_id
-  instance_type   = "t2.micro"
-  key_name        = data.aws_key_pair.this.key_name
+  ami           = data.aws_ami.ubuntu.id
+  subnet_id     = var.vpc.subnet_id
+  instance_type = "t2.micro"
+  key_name      = data.aws_key_pair.this.key_name
   vpc_security_group_ids = [
     aws_security_group.this.id,
   ]
@@ -186,7 +186,7 @@ resource "greynoise_sensor_bootstrap" "this" {
 }
 
 data "greynoise_sensor" "this" {
-  public_ip  = aws_instance.this.public_ip
+  public_ip = aws_instance.this.public_ip
   depends_on = [
     greynoise_sensor_bootstrap.this,
   ]
@@ -200,14 +200,14 @@ resource "greynoise_sensor_persona" "this" {
 
 output "personas" {
   description = "RDP personas"
-  value       = {
+  value = {
     ids = data.greynoise_personas.rdp.ids
   }
 }
 
 output "sensor" {
   description = "Sensor information"
-  value       = {
+  value = {
     public_ip = aws_instance.this.public_ip
     ssh_port  = greynoise_sensor_bootstrap.this.ssh_port_selected
   }
