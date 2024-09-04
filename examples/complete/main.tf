@@ -20,7 +20,7 @@ terraform {
   required_providers {
     greynoise = {
       source  = "greynoise-io/greynoise"
-      version = "1.0.0"
+      version = "0.1.0"
     }
     aws = {
       source  = "hashicorp/aws"

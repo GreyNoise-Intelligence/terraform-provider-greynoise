@@ -25,7 +25,7 @@ var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServe
 	"greynoise": providerserver.NewProtocol6WithError(New("test")()),
 }
 
-// mock API server
+// mock API server.
 type mockEndpoint struct {
 	method   string
 	path     string

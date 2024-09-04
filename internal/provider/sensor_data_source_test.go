@@ -118,7 +118,7 @@ func TestAccSensorDataSource(t *testing.T) {
 			}
 
 			defer func() {
-				for k, _ := range tc.env {
+				for k := range tc.env {
 					assert.NoError(t, os.Unsetenv(k))
 				}
 			}()

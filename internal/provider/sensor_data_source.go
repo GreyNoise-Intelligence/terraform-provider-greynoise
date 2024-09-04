@@ -86,7 +86,7 @@ func (d *SensorDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		if errors.Is(err, client.ErrNotFound) {
 			resp.Diagnostics.AddError(
 				"Sensor error",
-				fmt.Sprintf("Sensor not found"),
+				fmt.Sprintf("Sensor not found: %s", data.PublicIP),
 			)
 
 			return
@@ -105,8 +105,8 @@ func (d *SensorDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *SensorDataSource) getSensor(ctx context.Context, data SensorDataSourceModel) (*client.Sensor, error) {
-	c := r.data.Client
+func (d *SensorDataSource) getSensor(ctx context.Context, data SensorDataSourceModel) (*client.Sensor, error) {
+	c := d.data.Client
 
 	if !data.ID.IsNull() {
 		return c.GetSensor(ctx, data.ID.ValueString())
