@@ -2,7 +2,6 @@ package provider
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -123,7 +122,6 @@ func (m *mockAPIServer) Server() *httptest.Server {
 
 func body(b interface{}) func() interface{} {
 	return func() interface{} {
-		fmt.Println("Returning body", b)
 		return b
 	}
 }

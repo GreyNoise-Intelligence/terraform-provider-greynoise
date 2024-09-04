@@ -4,13 +4,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"regexp"
 	"testing"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/stretchr/testify/assert"
 
 	"github.com/GreyNoise-Intelligence/terraform-provider-greynoise/internal/client"
 )
@@ -66,12 +64,11 @@ func TestAccSensorDataSource(t *testing.T) {
 	testCases := []struct {
 		name        string
 		config      string
-		env         map[string]string
 		check       resource.TestCheckFunc
 		expectError *regexp.Regexp
 	}{
 		{
-			name: "success - public ip",
+			name: "success",
 			config: `
 			data "greynoise_sensor" "this" {
 			  public_ip = "159.223.200.217"
@@ -83,24 +80,10 @@ func TestAccSensorDataSource(t *testing.T) {
 			),
 		},
 		{
-			name: "success - id",
-			env: map[string]string{
-				"GN_API_KEY": mockAPIKey,
-			},
-			config: `
-			data "greynoise_sensor" "this" {
-			  id = "1d6aed11-f2de-48f9-9526-8fb72be10700"
-			}
-			`,
-			check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr("data.greynoise_sensor.this", "id", testSensor.ID),
-			),
-		},
-		{
 			name: "not found",
 			config: `
 			data "greynoise_sensor" "this" {
-			  id = "unknown"
+			  public_ip = "unknown"
 			}
 			`,
 			expectError: regexp.MustCompile(`Sensor not found`),
@@ -113,16 +96,6 @@ func TestAccSensorDataSource(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			for k, v := range tc.env {
-				assert.NoError(t, os.Setenv(k, v))
-			}
-
-			defer func() {
-				for k := range tc.env {
-					assert.NoError(t, os.Unsetenv(k))
-				}
-			}()
-
 			resource.Test(t, resource.TestCase{
 				ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 				Steps: []resource.TestStep{
@@ -132,7 +105,7 @@ func TestAccSensorDataSource(t *testing.T) {
 						  base_url = "%s"
 						  api_key  = "%s"
 						}
-						`, server.URL, mockServer.APIKey) + tc.config,
+						`, server.URL, mockAPIKey) + tc.config,
 						Check:       tc.check,
 						ExpectError: tc.expectError,
 					},

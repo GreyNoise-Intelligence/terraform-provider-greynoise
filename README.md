@@ -2,7 +2,7 @@
 
 The GreyNoise Provider enables Terraform to manage GreyNoise sensors and personas.
 
-* [Contributing guide]()
+* [Contributing guide](./CONTRIBUTING.md)
 * [FAQ]()
 * [Tutorials]()
 

@@ -274,6 +274,10 @@ func (c *GreyNoiseClient) SensorsSearch(ctx context.Context, filters SensorSearc
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusNotFound {
+			return nil, ErrNotFound
+		}
+
 		return nil, NewErrUnexpectedStatusCode(http.StatusOK, resp.StatusCode)
 	}
 
