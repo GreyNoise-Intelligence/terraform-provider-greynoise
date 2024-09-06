@@ -16,17 +16,9 @@ The API key can be specified in the configuration via `api_key` or using the env
 ## Example Usage:
 
 ```terraform
-terraform {
-  required_providers {
-    greynoise = {
-      source  = "hashicorp/greynoise"
-      version = "0.1.0"
-    }
-  }
-}
-
 provider "greynoise" {
-  // GN_API_KEY env var is used to provide key
+  // GN_API_KEY env var is preferred way to provide key
+  api_key = "XXX"
 }
 ```
 
@@ -58,36 +50,6 @@ variable "key_pair" {
     name             = string
     private_key_file = string
   })
-}
-
-# -- providers ---
-terraform {
-  required_providers {
-    greynoise = {
-      source  = "greynoise-io/greynoise"
-      version = "0.1.0"
-    }
-    aws = {
-      source  = "hashicorp/aws"
-      version = "5.64.0"
-    }
-  }
-}
-
-provider "aws" {
-  default_tags {
-    tags = {
-      Environment = "development"
-      Owner       = "greynoise"
-      Project     = "greynoise-tf-provider"
-    }
-  }
-
-  region = "us-east-1"
-}
-
-provider "greynoise" {
-  // GN_API_KEY env var is used to provide key
 }
 
 # -- main ---
@@ -208,8 +170,9 @@ output "personas" {
 output "sensor" {
   description = "Sensor information"
   value = {
+    id        = data.greynoise_sensor.this.id
     public_ip = aws_instance.this.public_ip
-    ssh_port  = greynoise_sensor_bootstrap.this.ssh_port_selected
+    ssh_port  = data.greynoise_sensor.this.access_port
   }
 }
 ```
