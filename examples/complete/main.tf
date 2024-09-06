@@ -15,36 +15,6 @@ variable "key_pair" {
   })
 }
 
-# -- providers ---
-terraform {
-  required_providers {
-    greynoise = {
-      source  = "greynoise-io/greynoise"
-      version = "0.1.0"
-    }
-    aws = {
-      source  = "hashicorp/aws"
-      version = "5.64.0"
-    }
-  }
-}
-
-provider "aws" {
-  default_tags {
-    tags = {
-      Environment = "development"
-      Owner       = "greynoise"
-      Project     = "greynoise-tf-provider"
-    }
-  }
-
-  region = "us-east-1"
-}
-
-provider "greynoise" {
-  // GN_API_KEY env var is used to provide key
-}
-
 # -- main ---
 locals {
   name = "greynoise-tf-provider"
@@ -163,7 +133,8 @@ output "personas" {
 output "sensor" {
   description = "Sensor information"
   value = {
+    id        = data.greynoise_sensor.this.id
     public_ip = aws_instance.this.public_ip
-    ssh_port  = greynoise_sensor_bootstrap.this.ssh_port_selected
+    ssh_port  = data.greynoise_sensor.this.access_port
   }
 }
