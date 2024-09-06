@@ -1,4 +1,10 @@
 
+## v0.2.0 - 2024-09-06
+### ENHANCEMENTS
+* data-source/greynoise_sensor: Additional sensor properties added to computed values.
+### NOTES
+* Provider documentation updated to remove typo in previous release.
+
 ## v0.1.0 - 2024-09-04
 ### FEATURES
 * provider: Added provider implementation
