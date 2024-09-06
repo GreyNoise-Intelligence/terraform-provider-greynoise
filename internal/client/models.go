@@ -91,13 +91,14 @@ type SensorSearchResponse struct {
 }
 
 type Sensor struct {
-	ID        string    `json:"sensor_id"`
-	Name      string    `json:"name"`
-	PublicIps []string  `json:"public_ips"`
-	Persona   string    `json:"persona"`
-	Status    string    `json:"status"`
-	Disabled  bool      `json:"disabled"`
-	LastSeen  time.Time `json:"last_seen"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID         string    `json:"sensor_id"`
+	Name       string    `json:"name"`
+	PublicIps  []string  `json:"public_ips"`
+	AccessPort int32     `json:"access_port"`
+	Persona    string    `json:"persona"`
+	Status     string    `json:"status"`
+	Disabled   bool      `json:"disabled"`
+	LastSeen   time.Time `json:"last_seen"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }

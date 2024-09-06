@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"testing"
 	"time"
 
@@ -22,12 +23,13 @@ func TestAccSensorDataSource(t *testing.T) {
 		PublicIps: []string{
 			"159.223.200.217",
 		},
-		Persona:   "501c5e5a-cf2e-4401-844a-04d4391b1332",
-		Status:    "healthy",
-		Disabled:  false,
-		LastSeen:  time.Date(2024, 8, 27, 16, 27, 2, 0, time.UTC),
-		CreatedAt: time.Date(2024, 8, 10, 3, 2, 22, 0, time.UTC),
-		UpdatedAt: time.Date(2024, 8, 26, 13, 53, 07, 0, time.UTC),
+		Persona:    "501c5e5a-cf2e-4401-844a-04d4391b1332",
+		Status:     "healthy",
+		AccessPort: 53129,
+		Disabled:   false,
+		LastSeen:   time.Date(2024, 8, 27, 16, 27, 2, 0, time.UTC),
+		CreatedAt:  time.Date(2024, 8, 10, 3, 2, 22, 0, time.UTC),
+		UpdatedAt:  time.Date(2024, 8, 26, 13, 53, 07, 0, time.UTC),
 	}
 
 	mockServer := defaultMockAPIServer()
@@ -77,6 +79,14 @@ func TestAccSensorDataSource(t *testing.T) {
 			check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("data.greynoise_sensor.this", "public_ip", "159.223.200.217"),
 				resource.TestCheckResourceAttr("data.greynoise_sensor.this", "id", testSensor.ID),
+				resource.TestCheckResourceAttr("data.greynoise_sensor.this", "name", testSensor.Name),
+				resource.TestCheckResourceAttr("data.greynoise_sensor.this", "status", testSensor.Status),
+				resource.TestCheckResourceAttr("data.greynoise_sensor.this", "disabled",
+					strconv.FormatBool(testSensor.Disabled)),
+				resource.TestCheckResourceAttr("data.greynoise_sensor.this", "persona", testSensor.Persona),
+				resource.TestCheckResourceAttr("data.greynoise_sensor.this", "access_port",
+					strconv.FormatInt(int64(testSensor.AccessPort), 10),
+				),
 			),
 		},
 		{
