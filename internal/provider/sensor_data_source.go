@@ -24,8 +24,13 @@ type SensorDataSource struct {
 }
 
 type SensorDataSourceModel struct {
-	ID       types.String `tfsdk:"id"`
-	PublicIP types.String `tfsdk:"public_ip"`
+	ID         types.String `tfsdk:"id"`
+	PublicIP   types.String `tfsdk:"public_ip"`
+	Name       types.String `tfsdk:"name"`
+	Status     types.String `tfsdk:"status"`
+	Disabled   types.Bool   `tfsdk:"disabled"`
+	Persona    types.String `tfsdk:"persona"`
+	AccessPort types.Int32  `tfsdk:"access_port"`
 }
 
 func (d *SensorDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -43,6 +48,26 @@ func (d *SensorDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 			"public_ip": schema.StringAttribute{
 				MarkdownDescription: "Sensor public IP.",
 				Optional:            true,
+			},
+			"name": schema.StringAttribute{
+				MarkdownDescription: "Sensor human-friendly name.",
+				Computed:            true,
+			},
+			"status": schema.StringAttribute{
+				MarkdownDescription: "Status of sensor.",
+				Computed:            true,
+			},
+			"disabled": schema.BoolAttribute{
+				MarkdownDescription: "Whether or not sensor is disabled.",
+				Computed:            true,
+			},
+			"persona": schema.StringAttribute{
+				MarkdownDescription: "Persona configured on sensor.",
+				Computed:            true,
+			},
+			"access_port": schema.Int32Attribute{
+				MarkdownDescription: "SSH port of sensor.",
+				Computed:            true,
 			},
 		},
 	}
@@ -100,6 +125,11 @@ func (d *SensorDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 	data.ID = types.StringValue(sensor.ID)
+	data.Name = types.StringValue(sensor.Name)
+	data.Status = types.StringValue(sensor.Status)
+	data.Disabled = types.BoolValue(sensor.Disabled)
+	data.Persona = types.StringValue(sensor.Persona)
+	data.AccessPort = types.Int32Value(sensor.AccessPort)
 
 	tflog.Trace(ctx, "Read sensor data source")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

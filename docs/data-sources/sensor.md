@@ -27,4 +27,9 @@ data "greynoise_sensor" "this" {
 
 ### Read-Only
 
+- `access_port` (Number) SSH port of sensor.
+- `disabled` (Boolean) Whether or not sensor is disabled.
 - `id` (String) Sensor UUID.
+- `name` (String) Sensor human-friendly name.
+- `persona` (String) Persona configured on sensor.
+- `status` (String) Status of sensor.
