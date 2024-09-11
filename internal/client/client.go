@@ -331,6 +331,18 @@ func (c *GreyNoiseClient) SensorBootstrapURL() *url.URL {
 	})
 }
 
+func (c *GreyNoiseClient) SensorUnBootstrapURL() *url.URL {
+	return c.baseURL.ResolveReference(&url.URL{
+		Path: fmt.Sprintf("/v1/workspaces/%s/sensors/unbootstrap/script", c.WorkspaceID()),
+	})
+}
+
+func (c *GreyNoiseClient) SensorsURL() *url.URL {
+	return c.baseURL.ResolveReference(&url.URL{
+		Path: fmt.Sprintf("/v1/workspaces/%s/sensors", c.WorkspaceID()),
+	})
+}
+
 func (c *GreyNoiseClient) setAuthHeader(req *http.Request) {
 	req.Header.Set(HeaderKey, c.apiKey)
 }
