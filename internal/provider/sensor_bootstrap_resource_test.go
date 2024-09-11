@@ -59,6 +59,12 @@ func TestAccSensorBootstrapResource(t *testing.T) {
 					checkBootstrapScriptFunc(server.URL, mockWorkspaceID, "179.108.182.240",
 						strRef("172.108.182.240"), intRef(2000)),
 				),
+				resource.TestCheckResourceAttr("greynoise_sensor_bootstrap.this", "unbootstrap_script",
+					fmt.Sprintf(`SENSOR_ID=$(cat /opt/greynoise/sensor.id) KEY=$(cat ~/.greynoise.key) && \
+curl -H "key: $KEY" -X DELETE -L %s/v1/workspaces/%s/sensors/$SENSOR_ID && \
+curl -H "key: $KEY" -L %s/v1/workspaces/%s/sensors/unbootstrap/script | sudo bash -s --`,
+						server.URL, mockWorkspaceID,
+						server.URL, mockWorkspaceID)),
 				resource.TestCheckResourceAttr("greynoise_sensor_bootstrap.this", "ssh_port_selected",
 					"2000"),
 			),

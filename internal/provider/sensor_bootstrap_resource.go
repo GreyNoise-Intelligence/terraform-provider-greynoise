@@ -31,12 +31,13 @@ type SensorBootstrapResource struct {
 }
 
 type SensorBootstrapResourceModel struct {
-	PublicIP        types.String `tfsdk:"public_ip"`
-	InternalIP      types.String `tfsdk:"internal_ip"`
-	SetupScript     types.String `tfsdk:"setup_script"`
-	BootstrapScript types.String `tfsdk:"bootstrap_script"`
-	SSHPort         types.Int32  `tfsdk:"ssh_port"`
-	SSHPortSelected types.Int32  `tfsdk:"ssh_port_selected"`
+	PublicIP          types.String `tfsdk:"public_ip"`
+	InternalIP        types.String `tfsdk:"internal_ip"`
+	SetupScript       types.String `tfsdk:"setup_script"`
+	BootstrapScript   types.String `tfsdk:"bootstrap_script"`
+	UnBootstrapScript types.String `tfsdk:"unbootstrap_script"`
+	SSHPort           types.Int32  `tfsdk:"ssh_port"`
+	SSHPortSelected   types.Int32  `tfsdk:"ssh_port_selected"`
 }
 
 func (r *SensorBootstrapResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -66,6 +67,10 @@ It generates a script that can be used with a "remote-exec" provisioner to setup
 			},
 			"bootstrap_script": schema.StringAttribute{
 				MarkdownDescription: "Script that can be run to boostrap a server.",
+				Computed:            true,
+			},
+			"unbootstrap_script": schema.StringAttribute{
+				MarkdownDescription: "Script that can be run to unboostrap a server.",
 				Computed:            true,
 			},
 			"ssh_port": schema.Int32Attribute{
@@ -137,6 +142,23 @@ curl -H "key: $KEY" -L %s | sudo bash -s -- -k $KEY %s%s%s`,
 			publicIPArg,
 			internalIPArg,
 			sshPortArg,
+		),
+	)
+	data.BootstrapScript = types.StringValue(
+		fmt.Sprintf(`KEY=$(cat ~/.greynoise.key) && \
+curl -H "key: $KEY" -L %s | sudo bash -s -- -k $KEY %s%s%s`,
+			r.data.Client.SensorBootstrapURL().String(),
+			publicIPArg,
+			internalIPArg,
+			sshPortArg,
+		),
+	)
+	data.UnBootstrapScript = types.StringValue(
+		fmt.Sprintf(`SENSOR_ID=$(cat /opt/greynoise/sensor.id) KEY=$(cat ~/.greynoise.key) && \
+curl -H "key: $KEY" -X DELETE -L %s/$SENSOR_ID && \
+curl -H "key: $KEY" -L %s | sudo bash -s --`,
+			r.data.Client.SensorsURL().String(),
+			r.data.Client.SensorUnBootstrapURL().String(),
 		),
 	)
 

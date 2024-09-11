@@ -84,15 +84,15 @@ data "greynoise_personas" "rdp" {
 resource "greynoise_sensor_bootstrap" "this" {
   public_ip = aws_instance.this.public_ip
 
-  connection {
-    host = aws_instance.this.public_ip
-    user = "ubuntu"
-    port = 22
-
-    private_key = file(var.key_pair.private_key_file)
-  }
-
   provisioner "remote-exec" {
+    connection {
+      host = aws_instance.this.public_ip
+      user = "ubuntu"
+      port = 22
+
+      private_key = file(var.key_pair.private_key_file)
+    }
+
     inline = [
       # ensure that script can run by waiting for cloud-init to complete
       "cloud-init status --wait > /dev/null",
@@ -101,12 +101,35 @@ resource "greynoise_sensor_bootstrap" "this" {
   }
 
   provisioner "remote-exec" {
+    connection {
+      host = aws_instance.this.public_ip
+      user = "ubuntu"
+      port = 22
+
+      private_key = file(var.key_pair.private_key_file)
+    }
+
     inline = [
       self.bootstrap_script,
     ]
     # failure is expected as SSH connection will be lost
     # once bootstrap completes and changes SSH port
     on_failure = continue
+  }
+
+  provisioner "remote-exec" {
+    connection {
+      host = "44.13.34.10"
+      user = "ubuntu"
+      port = self.ssh_port_selected
+
+      private_key = file(var.key_pair.private_key_file)
+    }
+
+    when = destroy
+    inline = [
+      self.unbootstrap_script,
+    ]
   }
 }
 
