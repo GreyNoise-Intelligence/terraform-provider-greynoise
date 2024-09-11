@@ -1,4 +1,8 @@
 
+## v0.3.0 - 2024-09-11
+### ENHANCEMENTS
+* resource/greynoise_sensor_bootstrap: Adds unbootstrap script to resource for destroy
+
 ## v0.2.0 - 2024-09-06
 ### ENHANCEMENTS
 * data-source/greynoise_sensor: Additional sensor properties added to computed values.
