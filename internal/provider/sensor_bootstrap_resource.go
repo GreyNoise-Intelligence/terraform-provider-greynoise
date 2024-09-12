@@ -33,6 +33,7 @@ type SensorBootstrapResource struct {
 type SensorBootstrapResourceModel struct {
 	PublicIP          types.String `tfsdk:"public_ip"`
 	InternalIP        types.String `tfsdk:"internal_ip"`
+	NAT               types.Bool   `tfsdk:"nat"`
 	SetupScript       types.String `tfsdk:"setup_script"`
 	BootstrapScript   types.String `tfsdk:"bootstrap_script"`
 	UnBootstrapScript types.String `tfsdk:"unbootstrap_script"`
@@ -58,6 +59,10 @@ It generates a script that can be used with a "remote-exec" provisioner to setup
 			},
 			"internal_ip": schema.StringAttribute{
 				MarkdownDescription: "Internal IP of the server to bootstrap.",
+				Optional:            true,
+			},
+			"nat": schema.BoolAttribute{
+				MarkdownDescription: "Whether or not NAT is used to route traffic to the server.",
 				Optional:            true,
 			},
 			"setup_script": schema.StringAttribute{
@@ -115,42 +120,40 @@ func (r *SensorBootstrapResource) Create(ctx context.Context, req resource.Creat
 	}
 
 	var (
-		publicIPArg, internalIPArg, sshPortArg string
+		publicIPArg, internalIPArg, sshPortArg, natArg string
 	)
 
 	if !data.PublicIP.IsNull() {
-		publicIPArg = fmt.Sprintf("-p %v ", data.PublicIP.ValueString())
+		publicIPArg = fmt.Sprintf(" -p %v", data.PublicIP.ValueString())
 	}
+
 	if !data.InternalIP.IsNull() {
-		internalIPArg = fmt.Sprintf("-i %v ", data.InternalIP.ValueString())
+		internalIPArg = fmt.Sprintf(" -i %v", data.InternalIP.ValueString())
 	}
+
 	if data.SSHPort.IsNull() {
 		sshPort := rand.Int32N(SSHPortMax-SSHPortMin) + SSHPortMin
 		data.SSHPortSelected = types.Int32Value(sshPort)
 	} else {
 		data.SSHPortSelected = data.SSHPort
 	}
-	sshPortArg = fmt.Sprintf("-s %v", data.SSHPortSelected.ValueInt32())
+	sshPortArg = fmt.Sprintf(" -s %v", data.SSHPortSelected.ValueInt32())
+
+	if data.NAT.ValueBool() {
+		natArg = " -t"
+	}
 
 	data.SetupScript = types.StringValue(
 		fmt.Sprintf(`echo %s > ~/.greynoise.key`, r.data.APIKey),
 	)
 	data.BootstrapScript = types.StringValue(
 		fmt.Sprintf(`KEY=$(cat ~/.greynoise.key) && \
-curl -H "key: $KEY" -L %s | sudo bash -s -- -k $KEY %s%s%s`,
+curl -H "key: $KEY" -L %s | sudo bash -s -- -k $KEY%s%s%s%s`,
 			r.data.Client.SensorBootstrapURL().String(),
 			publicIPArg,
 			internalIPArg,
 			sshPortArg,
-		),
-	)
-	data.BootstrapScript = types.StringValue(
-		fmt.Sprintf(`KEY=$(cat ~/.greynoise.key) && \
-curl -H "key: $KEY" -L %s | sudo bash -s -- -k $KEY %s%s%s`,
-			r.data.Client.SensorBootstrapURL().String(),
-			publicIPArg,
-			internalIPArg,
-			sshPortArg,
+			natArg,
 		),
 	)
 	data.UnBootstrapScript = types.StringValue(
