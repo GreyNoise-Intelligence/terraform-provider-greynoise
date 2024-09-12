@@ -1,13 +1,19 @@
 resource "greynoise_sensor_bootstrap" "this" {
   public_ip = "44.13.34.10"
 
+  triggers = {
+    # using trigger to comply with destroy provisioners only
+    # referencing  'self', 'count.index' or 'each.key' only in destroy provisioners
+    ssh_private_key = sensitive("XXX")
+  }
+
   provisioner "remote-exec" {
     connection {
       host = "44.13.34.10"
       user = "ubuntu"
       port = 22
 
-      private_key = "XXXXX" # private key
+      private_key = self.triggers.ssh_private_key
     }
 
     inline = [
@@ -23,7 +29,7 @@ resource "greynoise_sensor_bootstrap" "this" {
       user = "ubuntu"
       port = 22
 
-      private_key = "XXXXX" # private key
+      private_key = self.triggers.ssh_private_key
     }
 
     inline = [
@@ -40,7 +46,7 @@ resource "greynoise_sensor_bootstrap" "this" {
       user = "ubuntu"
       port = self.ssh_port_selected
 
-      private_key = "XXXXX" # private key
+      private_key = self.triggers.ssh_private_key
     }
 
     when = destroy

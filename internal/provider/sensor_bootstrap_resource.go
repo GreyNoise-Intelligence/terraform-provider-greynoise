@@ -8,8 +8,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -33,6 +33,7 @@ type SensorBootstrapResource struct {
 type SensorBootstrapResourceModel struct {
 	PublicIP          types.String `tfsdk:"public_ip"`
 	InternalIP        types.String `tfsdk:"internal_ip"`
+	Triggers          types.Map    `tfsdk:"triggers"`
 	NAT               types.Bool   `tfsdk:"nat"`
 	SetupScript       types.String `tfsdk:"setup_script"`
 	BootstrapScript   types.String `tfsdk:"bootstrap_script"`
@@ -48,14 +49,13 @@ func (r *SensorBootstrapResource) Metadata(_ context.Context, req resource.Metad
 func (r *SensorBootstrapResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `Sensor bootstrap resource provides options to bootstrap a server.
-It generates a script that can be used with a "remote-exec" provisioner to setup a GreyNoise sensor on a server.`,
+It generates a script that can be used with a ` + "`remote-exec`" + ` provisioner to setup a GreyNoise sensor on a server.
+
+This resource is inspired by [null_resource](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) to encapsulate provisioners.`,
 		Attributes: map[string]schema.Attribute{
 			"public_ip": schema.StringAttribute{
 				MarkdownDescription: "Public IP of the server to bootstrap.",
 				Required:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
 			},
 			"internal_ip": schema.StringAttribute{
 				MarkdownDescription: "Internal IP of the server to bootstrap.",
@@ -85,6 +85,14 @@ It generates a script that can be used with a "remote-exec" provisioner to setup
 			"ssh_port_selected": schema.Int32Attribute{
 				MarkdownDescription: "SSH port selected - same as ssh_port if set, otherwise randomly selected port.",
 				Computed:            true,
+			},
+			"triggers": schema.MapAttribute{
+				Description: "A map of arbitrary strings that, when changed, will force the null resource to be replaced, re-running any associated provisioners.",
+				ElementType: types.StringType,
+				Optional:    true,
+				PlanModifiers: []planmodifier.Map{
+					mapplanmodifier.RequiresReplace(),
+				},
 			},
 		},
 	}

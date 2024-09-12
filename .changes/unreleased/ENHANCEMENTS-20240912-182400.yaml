@@ -1,0 +1,3 @@
+kind: ENHANCEMENTS
+body: 'resource/greynoise_sensor_bootstrap: Adds triggers property to force re-create and for use in destroy provisioner.'
+time: 2024-09-12T18:24:00.251704-05:00
