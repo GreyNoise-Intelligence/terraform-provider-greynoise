@@ -120,6 +120,7 @@ data "greynoise_personas" "rdp" {
 
 resource "greynoise_sensor_bootstrap" "this" {
   public_ip = aws_instance.this.public_ip
+  nat       = true
 
   provisioner "remote-exec" {
     connection {

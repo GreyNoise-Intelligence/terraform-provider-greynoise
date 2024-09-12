@@ -78,6 +78,7 @@ resource "greynoise_sensor_bootstrap" "this" {
 ### Optional
 
 - `internal_ip` (String) Internal IP of the server to bootstrap.
+- `nat` (Boolean) Whether or not NAT is used to route traffic to the server.
 - `ssh_port` (Number) SSH port to configure after bootstrap. If not provided a random port is selected.
 
 ### Read-Only

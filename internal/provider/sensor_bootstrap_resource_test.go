@@ -36,7 +36,8 @@ func TestAccSensorBootstrapResource(t *testing.T) {
 					fmt.Sprintf("echo %s > ~/.greynoise.key", mockAPIKey),
 				),
 				resource.TestCheckResourceAttrWith("greynoise_sensor_bootstrap.this", "bootstrap_script",
-					checkBootstrapScriptFunc(server.URL, mockWorkspaceID, "179.108.182.240", nil, nil),
+					checkBootstrapScriptFunc(server.URL, mockWorkspaceID, "179.108.182.240",
+						nil, nil, false),
 				),
 				resource.TestCheckResourceAttrWith("greynoise_sensor_bootstrap.this", "ssh_port_selected",
 					checkAutoSelectedSSHPort,
@@ -50,6 +51,7 @@ func TestAccSensorBootstrapResource(t *testing.T) {
               public_ip = "179.108.182.240"
               internal_ip = "172.108.182.240"
               ssh_port = 2000
+              nat = true
 			}`,
 			check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("greynoise_sensor_bootstrap.this", "setup_script",
@@ -57,7 +59,7 @@ func TestAccSensorBootstrapResource(t *testing.T) {
 				),
 				resource.TestCheckResourceAttrWith("greynoise_sensor_bootstrap.this", "bootstrap_script",
 					checkBootstrapScriptFunc(server.URL, mockWorkspaceID, "179.108.182.240",
-						strRef("172.108.182.240"), intRef(2000)),
+						strRef("172.108.182.240"), intRef(2000), true),
 				),
 				resource.TestCheckResourceAttr("greynoise_sensor_bootstrap.this", "unbootstrap_script",
 					fmt.Sprintf(`SENSOR_ID=$(cat /opt/greynoise/sensor.id) KEY=$(cat ~/.greynoise.key) && \
@@ -102,7 +104,7 @@ curl -H "key: $KEY" -L %s/v1/workspaces/%s/sensors/unbootstrap/script | sudo bas
 }
 
 func checkBootstrapScriptFunc(serverURL, workspaceID, publicIP string,
-	internalIP *string, sshPort *int) resource.CheckResourceAttrWithFunc {
+	internalIP *string, sshPort *int, nat bool) resource.CheckResourceAttrWithFunc {
 	scriptStart := fmt.Sprintf(`KEY=$(cat ~/.greynoise.key) && \
 curl -H "key: $KEY" -L %s/v1/workspaces/%s/sensors/bootstrap/script | sudo bash -s -- -k $KEY -p %s`,
 		serverURL, workspaceID, publicIP)
@@ -115,6 +117,10 @@ curl -H "key: $KEY" -L %s/v1/workspaces/%s/sensors/bootstrap/script | sudo bash 
 		scriptStart += fmt.Sprintf(" -s %d", *sshPort)
 	} else {
 		scriptStart += " -s"
+	}
+
+	if nat {
+		scriptStart += " -t"
 	}
 
 	return func(value string) error {
