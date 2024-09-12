@@ -4,13 +4,16 @@ page_title: "greynoise_sensor_bootstrap Resource - greynoise"
 subcategory: ""
 description: |-
   Sensor bootstrap resource provides options to bootstrap a server.
-  It generates a script that can be used with a "remote-exec" provisioner to setup a GreyNoise sensor on a server.
+  It generates a script that can be used with a remote-exec provisioner to setup a GreyNoise sensor on a server.
+  This resource is inspired by null_resource https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource to encapsulate provisioners.
 ---
 
 # greynoise_sensor_bootstrap (Resource)
 
 Sensor bootstrap resource provides options to bootstrap a server.
-It generates a script that can be used with a "remote-exec" provisioner to setup a GreyNoise sensor on a server.
+It generates a script that can be used with a `remote-exec` provisioner to setup a GreyNoise sensor on a server.
+
+This resource is inspired by [null_resource](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) to encapsulate provisioners.
 
 ## Example Usage
 
@@ -18,13 +21,19 @@ It generates a script that can be used with a "remote-exec" provisioner to setup
 resource "greynoise_sensor_bootstrap" "this" {
   public_ip = "44.13.34.10"
 
+  config = {
+    # using config to comply with destroy provisioners only
+    # referencing  'self', 'count.index' or 'each.key' only in destroy provisioners
+    ssh_private_key = sensitive("XXX")
+  }
+
   provisioner "remote-exec" {
     connection {
       host = "44.13.34.10"
       user = "ubuntu"
       port = 22
 
-      private_key = "XXXXX" # private key
+      private_key = self.config.ssh_private_key
     }
 
     inline = [
@@ -40,7 +49,7 @@ resource "greynoise_sensor_bootstrap" "this" {
       user = "ubuntu"
       port = 22
 
-      private_key = "XXXXX" # private key
+      private_key = self.config.ssh_private_key
     }
 
     inline = [
@@ -57,7 +66,7 @@ resource "greynoise_sensor_bootstrap" "this" {
       user = "ubuntu"
       port = self.ssh_port_selected
 
-      private_key = "XXXXX" # private key
+      private_key = self.config.ssh_private_key
     }
 
     when = destroy
@@ -77,6 +86,7 @@ resource "greynoise_sensor_bootstrap" "this" {
 
 ### Optional
 
+- `config` (Map of String) A map of arbitrary strings that can be used in any associated provisioners.
 - `internal_ip` (String) Internal IP of the server to bootstrap.
 - `nat` (Boolean) Whether or not NAT is used to route traffic to the server.
 - `ssh_port` (Number) SSH port to configure after bootstrap. If not provided a random port is selected.
