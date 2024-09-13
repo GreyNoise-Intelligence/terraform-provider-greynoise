@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"net"
 	"regexp"
 	"strconv"
 	"strings"
@@ -9,7 +10,45 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
+	"github.com/stretchr/testify/assert"
 )
+
+func TestDeterministicSSHPort(t *testing.T) {
+	testCases := []struct {
+		name string
+		ip   net.IP
+		port int32
+	}{
+		{
+			name: "case-1",
+			ip:   net.ParseIP("185.108.182.240"),
+			port: 62914,
+		},
+		{
+			name: "case-2",
+			ip:   net.ParseIP("179.108.182.240"),
+			port: 58026,
+		},
+		{
+			name: "case-3",
+			ip:   net.ParseIP("79.172.244.248"),
+			port: 61609,
+		},
+		{
+			name: "case-4",
+			ip:   net.ParseIP("39.101.187.33"),
+			port: 62864,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.port, DeterministicSSHPort(tc.ip))
+		})
+	}
+}
 
 func TestAccSensorBootstrapResource(t *testing.T) {
 	t.Parallel()
@@ -43,6 +82,8 @@ func TestAccSensorBootstrapResource(t *testing.T) {
 						resource.TestCheckResourceAttr("greynoise_sensor_bootstrap.this", "setup_script",
 							fmt.Sprintf("echo %s > ~/.greynoise.key", mockAPIKey),
 						),
+						resource.TestCheckResourceAttr("greynoise_sensor_bootstrap.this", "ssh_port_selected",
+							"62914"),
 						resource.TestCheckResourceAttrWith("greynoise_sensor_bootstrap.this", "bootstrap_script",
 							checkBootstrapScriptFunc(server.URL, mockWorkspaceID, "185.108.182.240",
 								nil, nil, false),
@@ -91,7 +132,7 @@ curl -H "key: $KEY" -L %s/v1/workspaces/%s/sensors/unbootstrap/script | sudo bas
 			},
 		},
 		{
-			name: "success - force re-create",
+			name: "success - update",
 			steps: []step{
 				{
 					config: `
@@ -103,6 +144,8 @@ curl -H "key: $KEY" -L %s/v1/workspaces/%s/sensors/unbootstrap/script | sudo bas
 						resource.TestCheckResourceAttr("greynoise_sensor_bootstrap.this", "setup_script",
 							fmt.Sprintf("echo %s > ~/.greynoise.key", mockAPIKey),
 						),
+						resource.TestCheckResourceAttr("greynoise_sensor_bootstrap.this", "ssh_port_selected",
+							"58026"),
 						resource.TestCheckResourceAttrWith("greynoise_sensor_bootstrap.this", "bootstrap_script",
 							checkBootstrapScriptFunc(server.URL, mockWorkspaceID, "179.108.182.240",
 								strRef("172.108.182.240"), nil, false),

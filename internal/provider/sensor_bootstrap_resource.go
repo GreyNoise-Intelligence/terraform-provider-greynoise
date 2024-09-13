@@ -2,8 +2,10 @@ package provider
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"math/rand/v2"
+	"net"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -173,17 +175,15 @@ func (r *SensorBootstrapResource) computeAttributes(data *SensorBootstrapResourc
 		publicIPArg, internalIPArg, sshPortArg, natArg string
 	)
 
-	if !data.PublicIP.IsNull() {
-		publicIPArg = fmt.Sprintf(" -p %v", data.PublicIP.ValueString())
-	}
+	publicIPArg = fmt.Sprintf(" -p %v", data.PublicIP.ValueString())
 
 	if !data.InternalIP.IsNull() {
 		internalIPArg = fmt.Sprintf(" -i %v", data.InternalIP.ValueString())
 	}
 
 	if data.SSHPort.IsNull() {
-		sshPort := rand.Int32N(SSHPortMax-SSHPortMin) + SSHPortMin
-		data.SSHPortSelected = types.Int32Value(sshPort)
+		publicIP := net.ParseIP(data.PublicIP.ValueString())
+		data.SSHPortSelected = types.Int32Value(DeterministicSSHPort(publicIP))
 	} else {
 		data.SSHPortSelected = data.SSHPort
 	}
@@ -214,4 +214,19 @@ curl -H "key: $KEY" -L %s | sudo bash -s --`,
 			r.data.Client.SensorUnBootstrapURL().String(),
 		),
 	)
+}
+
+func DeterministicSSHPort(ip net.IP) int32 {
+	var val1, val2 uint64
+	if len(ip) == 16 {
+		val1 = binary.BigEndian.Uint64(ip[0:9])
+		val2 = binary.BigEndian.Uint64(ip[8:16])
+	} else {
+		val1 = binary.BigEndian.Uint64(ip)
+		val2 = val1
+	}
+
+	s := rand.NewPCG(val1, val2)
+	r := rand.New(s)
+	return r.Int32N(SSHPortMax-SSHPortMin) + SSHPortMin
 }
