@@ -1,4 +1,8 @@
 
+## v0.4.1 - 2024-09-13
+### BUG FIXES
+* resource/greynoise_sensor_bootstrap: Fixes bug with changing value of computed SSH port selected.
+
 ## v0.4.0 - 2024-09-13
 ### ENHANCEMENTS
 * resource/greynoise_sensor_bootstrap: Add `nat` argument to specify is NAT is used for traffic to bootstrap server.
