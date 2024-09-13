@@ -1,4 +1,9 @@
 
+## v0.4.0 - 2024-09-13
+### ENHANCEMENTS
+* resource/greynoise_sensor_bootstrap: Add `nat` argument to specify is NAT is used for traffic to bootstrap server.
+* resource/greynoise_sensor_bootstrap: Adds `config` argument to allow specifying values for use in provisioners.
+
 ## v0.3.0 - 2024-09-11
 ### ENHANCEMENTS
 * resource/greynoise_sensor_bootstrap: Adds unbootstrap script to resource for destroy
