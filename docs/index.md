@@ -54,7 +54,7 @@ variable "key_pair" {
 
 # -- main ---
 locals {
-  name = "greynoise-tf-provider"
+  name = "greynoise-sensor-example"
 }
 
 data "aws_ami" "ubuntu" {
@@ -120,15 +120,21 @@ data "greynoise_personas" "rdp" {
 
 resource "greynoise_sensor_bootstrap" "this" {
   public_ip = aws_instance.this.public_ip
-  nat       = true
+
+  config = {
+    # using config to comply with destroy provisioners only
+    # referencing  'self', 'count.index' or 'each.key' only in destroy provisioners
+    ssh_private_key = sensitive(file(var.key_pair.private_key_file))
+    public_ip       = aws_instance.this.public_ip
+  }
 
   provisioner "remote-exec" {
     connection {
-      host = aws_instance.this.public_ip
+      host = self.config.public_ip
       user = "ubuntu"
       port = 22
 
-      private_key = file(var.key_pair.private_key_file)
+      private_key = self.config.ssh_private_key
     }
 
     inline = [
@@ -140,11 +146,11 @@ resource "greynoise_sensor_bootstrap" "this" {
 
   provisioner "remote-exec" {
     connection {
-      host = aws_instance.this.public_ip
+      host = self.config.public_ip
       user = "ubuntu"
       port = 22
 
-      private_key = file(var.key_pair.private_key_file)
+      private_key = self.config.ssh_private_key
     }
 
     inline = [
@@ -157,17 +163,20 @@ resource "greynoise_sensor_bootstrap" "this" {
 
   provisioner "remote-exec" {
     connection {
-      host = "44.13.34.10"
+      host = self.config.public_ip
       user = "ubuntu"
       port = self.ssh_port_selected
 
-      private_key = file(var.key_pair.private_key_file)
+      private_key = self.config.ssh_private_key
     }
 
     when = destroy
     inline = [
       self.unbootstrap_script,
     ]
+    # failure is expected as SSH connection will be lost
+    # once unbootstrap completes and changes SSH port
+    on_failure = continue
   }
 }
 

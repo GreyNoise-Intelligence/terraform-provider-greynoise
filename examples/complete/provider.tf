@@ -16,7 +16,7 @@ provider "aws" {
     tags = {
       Environment = "development"
       Owner       = "greynoise"
-      Project     = "greynoise-tf-provider"
+      Project     = "greynoise-sensor-example"
     }
   }
 

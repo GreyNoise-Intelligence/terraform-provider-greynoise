@@ -33,6 +33,7 @@ type SensorBootstrapResource struct {
 type SensorBootstrapResourceModel struct {
 	PublicIP          types.String `tfsdk:"public_ip"`
 	InternalIP        types.String `tfsdk:"internal_ip"`
+	Config            types.Map    `tfsdk:"config"`
 	NAT               types.Bool   `tfsdk:"nat"`
 	SetupScript       types.String `tfsdk:"setup_script"`
 	BootstrapScript   types.String `tfsdk:"bootstrap_script"`
@@ -48,7 +49,9 @@ func (r *SensorBootstrapResource) Metadata(_ context.Context, req resource.Metad
 func (r *SensorBootstrapResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `Sensor bootstrap resource provides options to bootstrap a server.
-It generates a script that can be used with a "remote-exec" provisioner to setup a GreyNoise sensor on a server.`,
+It generates a script that can be used with a ` + "`remote-exec`" + ` provisioner to setup a GreyNoise sensor on a server.
+
+This resource is inspired by [null_resource](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) to encapsulate provisioners.`,
 		Attributes: map[string]schema.Attribute{
 			"public_ip": schema.StringAttribute{
 				MarkdownDescription: "Public IP of the server to bootstrap.",
@@ -86,6 +89,11 @@ It generates a script that can be used with a "remote-exec" provisioner to setup
 				MarkdownDescription: "SSH port selected - same as ssh_port if set, otherwise randomly selected port.",
 				Computed:            true,
 			},
+			"config": schema.MapAttribute{
+				Description: "A map of arbitrary strings that can be used in any associated provisioners.",
+				ElementType: types.StringType,
+				Optional:    true,
+			},
 		},
 	}
 }
@@ -119,6 +127,48 @@ func (r *SensorBootstrapResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
+	r.computeAttributes(&data)
+
+	tflog.Trace(ctx, "Created sensor bootstrap resource")
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (r *SensorBootstrapResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var data SensorBootstrapResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	r.computeAttributes(&data)
+
+	tflog.Trace(ctx, "Read sensor bootstrap resource")
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (r *SensorBootstrapResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var data SensorBootstrapResourceModel
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	r.computeAttributes(&data)
+
+	tflog.Trace(ctx, "Update sensor bootstrap resource")
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (r *SensorBootstrapResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+}
+
+func (r *SensorBootstrapResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("public_ip"), req, resp)
+}
+
+func (r *SensorBootstrapResource) computeAttributes(data *SensorBootstrapResourceModel) {
 	var (
 		publicIPArg, internalIPArg, sshPortArg, natArg string
 	)
@@ -164,45 +214,4 @@ curl -H "key: $KEY" -L %s | sudo bash -s --`,
 			r.data.Client.SensorUnBootstrapURL().String(),
 		),
 	)
-
-	tflog.Trace(ctx, "Created sensor bootstrap resource")
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-}
-
-func (r *SensorBootstrapResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data SensorBootstrapResourceModel
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-}
-
-func (r *SensorBootstrapResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var data SensorBootstrapResourceModel
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-}
-
-func (r *SensorBootstrapResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var data SensorBootstrapResourceModel
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-}
-
-func (r *SensorBootstrapResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("public_ip"), req, resp)
 }
