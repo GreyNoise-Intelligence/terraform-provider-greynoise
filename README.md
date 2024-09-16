@@ -3,8 +3,6 @@
 The [GreyNoise Provider](https://registry.terraform.io/providers/GreyNoise-Intelligence/greynoise/latest/docs) enables Terraform to manage GreyNoise sensors and personas.
 
 * [Contributing guide](./CONTRIBUTING.md)
-* [FAQ]()
-* [Tutorials]()
 
 ## Developing the Provider
 
