@@ -229,6 +229,39 @@ func (c *GreyNoiseClient) GetSensor(ctx context.Context, id string) (*Sensor, er
 	return &result, nil
 }
 
+func (c *GreyNoiseClient) UpdateSensor(ctx context.Context, id string, request SensorUpdateRequest) error {
+	u := c.baseURL.ResolveReference(&url.URL{Path: fmt.Sprintf("/v1/workspaces/%s/sensors/%s",
+		c.WorkspaceID(), id)})
+
+	body, err := json.Marshal(request)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "PUT", u.String(), bytes.NewBuffer(body))
+	if err != nil {
+		return err
+	}
+
+	c.setAuthHeader(req)
+	c.setJSONContentHeaders(req)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusAccepted {
+		if resp.StatusCode == http.StatusNotFound {
+			return ErrNotFound
+		}
+
+		return NewErrUnexpectedStatusCode(http.StatusAccepted, resp.StatusCode)
+	}
+
+	return nil
+}
+
 func (c *GreyNoiseClient) SensorsSearch(ctx context.Context, filters SensorSearchFilter) (*SensorSearchResponse, error) {
 	if filters.SortBy == "" {
 		filters.SortBy = SensorSortByCreatedAt
@@ -288,43 +321,6 @@ func (c *GreyNoiseClient) SensorsSearch(ctx context.Context, filters SensorSearc
 
 	return &result, nil
 }
-
-type ApplyPersonaRequest struct {
-	Persona string `json:"persona"`
-}
-
-func (c *GreyNoiseClient) ApplyPersona(ctx context.Context, sensorID string,
-	personaID string) error {
-	u := c.baseURL.ResolveReference(&url.URL{Path: fmt.Sprintf("/v1/workspaces/%s/sensors/%s",
-		c.WorkspaceID(), sensorID)})
-
-	body, err := json.Marshal(ApplyPersonaRequest{
-		Persona: personaID,
-	})
-	if err != nil {
-		return err
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "PUT", u.String(), bytes.NewBuffer(body))
-	if err != nil {
-		return err
-	}
-
-	c.setAuthHeader(req)
-	c.setJSONContentHeaders(req)
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode != http.StatusAccepted {
-		return NewErrUnexpectedStatusCode(http.StatusAccepted, resp.StatusCode)
-	}
-
-	return nil
-}
-
 func (c *GreyNoiseClient) SensorBootstrapURL() *url.URL {
 	return c.baseURL.ResolveReference(&url.URL{
 		Path: fmt.Sprintf("/v1/workspaces/%s/sensors/bootstrap/script", c.WorkspaceID()),

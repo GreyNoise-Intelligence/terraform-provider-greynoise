@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+
+	"github.com/GreyNoise-Intelligence/terraform-provider-greynoise/internal/client"
 )
 
 var _ resource.Resource = &SensorPersonaResource{}
@@ -80,7 +82,9 @@ func (r *SensorPersonaResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	if err := r.data.Client.ApplyPersona(ctx, data.SensorID.ValueString(), data.PersonaID.ValueString()); err != nil {
+	if err := r.data.Client.UpdateSensor(ctx, data.SensorID.ValueString(), client.SensorUpdateRequest{
+		Persona: data.PersonaID.ValueString(),
+	}); err != nil {
 		resp.Diagnostics.AddError(
 			"Operation error",
 			fmt.Sprintf("Error occurred while applying persona to sensor: %s", err.Error()),
@@ -125,7 +129,9 @@ func (r *SensorPersonaResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	if err := r.data.Client.ApplyPersona(ctx, data.SensorID.ValueString(), data.PersonaID.ValueString()); err != nil {
+	if err := r.data.Client.UpdateSensor(ctx, data.SensorID.ValueString(), client.SensorUpdateRequest{
+		Persona: data.PersonaID.ValueString(),
+	}); err != nil {
 		resp.Diagnostics.AddError(
 			"Operation error",
 			fmt.Sprintf("Error occurred while applying persona to sensor: %s", err.Error()),

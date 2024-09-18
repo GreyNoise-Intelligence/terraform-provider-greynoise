@@ -14,7 +14,7 @@ import (
 	"github.com/GreyNoise-Intelligence/terraform-provider-greynoise/internal/client"
 )
 
-func TestAccSensorPersonaResource(t *testing.T) {
+func TestAccSensorMetadataResource(t *testing.T) {
 	t.Parallel()
 
 	testSensor := &client.Sensor{
@@ -23,7 +23,16 @@ func TestAccSensorPersonaResource(t *testing.T) {
 		PublicIps: []string{
 			"159.223.200.217",
 		},
-		Persona:   "501c5e5a-cf2e-4401-844a-04d4391b1332",
+		Persona: "501c5e5a-cf2e-4401-844a-04d4391b1332",
+		Metadata: client.SensorMetadata{
+			Items: []client.SensorMetadatum{
+				{
+					Access: client.MetadataAccessReadonly,
+					Name:   "provider",
+					Val:    "greynoise",
+				},
+			},
+		},
 		Status:    "healthy",
 		Disabled:  false,
 		LastSeen:  time.Date(2024, 8, 27, 16, 27, 2, 0, time.UTC),
@@ -42,7 +51,14 @@ func TestAccSensorPersonaResource(t *testing.T) {
 		func(r *http.Request) {
 			var req client.SensorUpdateRequest
 			_ = json.NewDecoder(r.Body).Decode(&req)
-			testSensor.Persona = req.Persona
+
+			if req.Name != "" {
+				testSensor.Name = req.Name
+			}
+
+			if req.Metadata != nil {
+				testSensor.Metadata = *req.Metadata
+			}
 		},
 	)
 	mockServer.Register(http.MethodGet,
@@ -70,16 +86,16 @@ func TestAccSensorPersonaResource(t *testing.T) {
 			steps: []step{
 				{
 
-					config: `resource "greynoise_sensor_persona" "this" {
-						  sensor_id = "1d6aed11-f2de-48f9-9526-8fb72be10700"
-						  persona_id = "501c5e5a-cf2e-4401-844a-04d4391b1332"
-						}`,
+					config: `resource "greynoise_sensor_metadata" "this" {
+					  sensor_id = "1d6aed11-f2de-48f9-9526-8fb72be10700"
+					  name = "Angry Cuscus"
+					}`,
 					check: resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr("greynoise_sensor_persona.this", "sensor_id",
+						resource.TestCheckResourceAttr("greynoise_sensor_metadata.this", "sensor_id",
 							"1d6aed11-f2de-48f9-9526-8fb72be10700",
 						),
-						resource.TestCheckResourceAttr("greynoise_sensor_persona.this", "persona_id",
-							"501c5e5a-cf2e-4401-844a-04d4391b1332",
+						resource.TestCheckResourceAttr("greynoise_sensor_metadata.this", "name",
+							"Angry Cuscus",
 						),
 					),
 				},
@@ -90,42 +106,70 @@ func TestAccSensorPersonaResource(t *testing.T) {
 			steps: []step{
 				{
 
-					config: `resource "greynoise_sensor_persona" "this" {
-						  sensor_id = "1d6aed11-f2de-48f9-9526-8fb72be10700"
-						  persona_id = "501c5e5a-cf2e-4401-844a-04d4391b1332"
-						}`,
+					config: `resource "greynoise_sensor_metadata" "this" {
+					  sensor_id = "1d6aed11-f2de-48f9-9526-8fb72be10700"
+					  name = "Angry Cuscus"	
+					}`,
 					check: resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr("greynoise_sensor_persona.this", "sensor_id",
+						resource.TestCheckResourceAttr("greynoise_sensor_metadata.this", "sensor_id",
 							"1d6aed11-f2de-48f9-9526-8fb72be10700",
 						),
-						resource.TestCheckResourceAttr("greynoise_sensor_persona.this", "persona_id",
-							"501c5e5a-cf2e-4401-844a-04d4391b1332",
+						resource.TestCheckResourceAttr("greynoise_sensor_metadata.this", "name",
+							"Angry Cuscus",
 						),
 					),
 				},
 				{
-					config: `
-					resource "greynoise_sensor_persona" "this" {
-		              sensor_id = "1d6aed11-f2de-48f9-9526-8fb72be10700"
-		              persona_id = "601c5e5a-cf2e-4401-844a-04d4391b1332"
+					config: `resource "greynoise_sensor_metadata" "this" {
+						sensor_id = "1d6aed11-f2de-48f9-9526-8fb72be10700"
+						name = "Angry Alligator"
+						//metadata = [
+						//  {
+						//    name = "type"
+						//    value = "terraform"
+						//  }
+						//]
 					}`,
 					check: resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr("greynoise_sensor_persona.this", "sensor_id",
+						resource.TestCheckResourceAttr("greynoise_sensor_metadata.this", "sensor_id",
 							"1d6aed11-f2de-48f9-9526-8fb72be10700",
 						),
-						resource.TestCheckResourceAttr("greynoise_sensor_persona.this", "persona_id",
-							"601c5e5a-cf2e-4401-844a-04d4391b1332",
+						resource.TestCheckResourceAttr("greynoise_sensor_metadata.this", "name",
+							"Angry Alligator",
 						),
+						/*resource.TestCheckResourceAttr("greynoise_sensor_metadata.this", "metadata.0.name",
+							"type",
+						),
+						resource.TestCheckResourceAttr("greynoise_sensor_metadata.this", "metadata.0.value",
+							"terraform",
+						),*/
 					),
 					planChecks: resource.ConfigPlanChecks{
 						PreApply: []plancheck.PlanCheck{
-							plancheck.ExpectResourceAction("greynoise_sensor_persona.this",
+							plancheck.ExpectResourceAction("greynoise_sensor_metadata.this",
 								plancheck.ResourceActionUpdate),
 						},
 					},
 				},
 			},
 		},
+		/*{
+			name: "failure - empty",
+			steps: []step{
+				{
+
+					config: `resource "greynoise_sensor_metadata" "this" {
+				       sensor_id = "1d6aed11-f2de-48f9-9526-8fb72be10700"
+				    }`,
+					expectError: regexp.MustCompile(`At least one of these attributes must be configured: \[name,metadata\]`),
+					check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("greynoise_sensor_metadata.this", "sensor_id",
+							"1d6aed11-f2de-48f9-9526-8fb72be10700",
+						),
+					),
+				},
+			},
+		},*/
 	}
 
 	for _, tc := range testCases {
@@ -138,11 +182,11 @@ func TestAccSensorPersonaResource(t *testing.T) {
 			for i, step := range tc.steps {
 				testCaseSteps[i] = resource.TestStep{
 					Config: fmt.Sprintf(`
-						provider "greynoise" {
-						  base_url = "%s"
-						  api_key  = "%s"
-						}
-						`, server.URL, mockAPIKey) + step.config,
+				provider "greynoise" {
+				base_url = "%s"
+				api_key = "%s"
+				}
+				`, server.URL, mockAPIKey) + step.config,
 					Check:            step.check,
 					ConfigPlanChecks: step.planChecks,
 					ExpectError:      step.expectError,
