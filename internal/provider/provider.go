@@ -119,6 +119,7 @@ func (p *GreyNoiseProvider) Configure(ctx context.Context, req provider.Configur
 func (p *GreyNoiseProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewSensorBootstrapResource,
+		NewSensorMetadataResource,
 		NewSensorPersonaResource,
 	}
 }

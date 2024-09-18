@@ -30,12 +30,6 @@ func TestGreyNoiseClient_GetPersona(t *testing.T) {
 		},
 		Description: "A Remote Desktop Protocol server. Designed to observe credential " +
 			"bruteforce activity.",
-		ApplicationProtocols: []string{
-			"rdp",
-		},
-		Ports: []int32{
-			3389,
-		},
 	}
 
 	testAccountJSON := `
@@ -216,12 +210,6 @@ func TestGreyNoiseClient_PersonasSearch(t *testing.T) {
 		},
 		Description: "A Remote Desktop Protocol server. Designed to observe credential " +
 			"bruteforce activity.",
-		ApplicationProtocols: []string{
-			"rdp",
-		},
-		Ports: []int32{
-			3389,
-		},
 	}
 
 	testAccountJSON := `
@@ -593,6 +581,168 @@ func TestGreyNoiseClient_GetSensor(t *testing.T) {
 	}
 }
 
+func TestGreyNoiseClient_UpdateSensor(t *testing.T) {
+	testAPIKey := "test-7037403284"
+	testAccountJSON := `
+{
+  "user_id": "4c65d8a0-ed21-417e-a1a2-65a4e09c3144",
+  "workspace_id": "7c65d8a0-ed21-417e-a1a2-65a4e09c3144"
+}`
+
+	mockAccount := func(t *testing.T, httpClient *client.MockHTTPClient) {
+		httpClient.EXPECT().
+			Do(gomock.Any()).
+			DoAndReturn(func(req *http.Request) (*http.Response, error) {
+				assert.Equal(t, req.Method, http.MethodGet)
+				assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
+				assert.Equal(t, "https://api.greynoise.io/v1/account", req.URL.String())
+
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       responseBody(testAccountJSON),
+				}, nil
+			})
+	}
+
+	type input struct {
+		id  string
+		req client.SensorUpdateRequest
+	}
+
+	testCases := []struct {
+		name   string
+		input  input
+		expect func(*testing.T, *client.MockHTTPClient)
+		want   error
+	}{
+		{
+			name: "happy path",
+			input: input{
+				id: "ac65d8a0-ed21-417e-a1a2-65a4e09c3144",
+				req: client.SensorUpdateRequest{
+					Name: "Affectionate Coral",
+					Metadata: &client.SensorMetadata{
+						Items: []client.SensorMetadatum{
+							{
+								Access: client.MetadataAccessReadonly,
+								Name:   "provider",
+								Val:    "greynoise",
+							},
+						},
+					},
+				},
+			},
+			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
+				httpClient.EXPECT().
+					Do(gomock.Any()).
+					DoAndReturn(func(req *http.Request) (*http.Response, error) {
+						assert.Equal(t, req.Method, http.MethodPut)
+						assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
+						assert.Equal(t, "https://api.greynoise.io/v1/workspaces/"+
+							"7c65d8a0-ed21-417e-a1a2-65a4e09c3144/sensors/ac65d8a0-ed21-417e-a1a2-65a4e09c3144",
+							req.URL.String())
+
+						body, err := io.ReadAll(req.Body)
+						assert.NoError(t, err)
+						assert.JSONEq(t, `{
+						  "name": "Affectionate Coral",
+						  "metadata": {
+							"items": [
+							  {
+								"access": "readonly",
+								"name": "provider",
+								"val": "greynoise"
+							  }
+							]
+						  }
+						}`, string(body))
+
+						return &http.Response{
+							StatusCode: http.StatusAccepted,
+						}, nil
+					})
+			},
+		},
+		{
+			name: "http client error",
+			input: input{
+				id: "ac65d8a0-ed21-417e-a1a2-65a4e09c3144",
+				req: client.SensorUpdateRequest{
+					Persona: "bc65d8a0-ed21-417e-a1a2-65a4e09c3144",
+				},
+			},
+			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
+				httpClient.EXPECT().
+					Do(gomock.Any()).
+					DoAndReturn(func(req *http.Request) (*http.Response, error) {
+						assert.Equal(t, req.Method, http.MethodPut)
+						assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
+						assert.Equal(t, "https://api.greynoise.io/v1/workspaces/"+
+							"7c65d8a0-ed21-417e-a1a2-65a4e09c3144/sensors/ac65d8a0-ed21-417e-a1a2-65a4e09c3144",
+							req.URL.String())
+
+						body, err := io.ReadAll(req.Body)
+						assert.NoError(t, err)
+						assert.JSONEq(t, `{"persona": "bc65d8a0-ed21-417e-a1a2-65a4e09c3144"}`, string(body))
+
+						return nil, errors.New("http error")
+					})
+			},
+			want: errors.New("http error"),
+		},
+		{
+			name: "unexpected status code",
+			input: input{
+				id: "cc65d8a0-ed21-417e-a1a2-65a4e09c3144",
+				req: client.SensorUpdateRequest{
+					Persona: "bc65d8a0-ed21-417e-a1a2-65a4e09c3144",
+				},
+			},
+			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
+				httpClient.EXPECT().
+					Do(gomock.Any()).
+					DoAndReturn(func(req *http.Request) (*http.Response, error) {
+						assert.Equal(t, req.Method, http.MethodPut)
+						assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
+						assert.Equal(t, "https://api.greynoise.io/v1/workspaces/"+
+							"7c65d8a0-ed21-417e-a1a2-65a4e09c3144/sensors/cc65d8a0-ed21-417e-a1a2-65a4e09c3144",
+							req.URL.String())
+
+						body, err := io.ReadAll(req.Body)
+						assert.NoError(t, err)
+						assert.JSONEq(t, `{"persona": "bc65d8a0-ed21-417e-a1a2-65a4e09c3144"}`, string(body))
+
+						return &http.Response{
+							StatusCode: http.StatusInternalServerError,
+						}, nil
+					})
+			},
+			want: client.NewErrUnexpectedStatusCode(http.StatusAccepted, http.StatusInternalServerError),
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockHTTPClient := client.NewMockHTTPClient(ctrl)
+			mockAccount(t, mockHTTPClient)
+
+			if tc.expect != nil {
+				tc.expect(t, mockHTTPClient)
+			}
+
+			gClient, err := client.New(testAPIKey, client.WithHTTPClient(mockHTTPClient))
+			assert.NoError(t, err)
+
+			err = gClient.UpdateSensor(context.Background(), tc.input.id, tc.input.req)
+			assert.Equal(t, tc.want, err)
+		})
+	}
+}
+
 func TestGreyNoiseClient_SensorSearch(t *testing.T) {
 	testAPIKey := "test-4o3uwofjsldfj"
 	testSensor := client.Sensor{
@@ -804,142 +954,6 @@ func TestGreyNoiseClient_SensorSearch(t *testing.T) {
 			response, err := gClient.SensorsSearch(context.Background(), tc.input)
 			assert.Equal(t, tc.want.response, response)
 			assert.Equal(t, tc.want.err, err)
-		})
-	}
-}
-
-func TestGreyNoiseClient_ApplyPersona(t *testing.T) {
-	testAPIKey := "test-7037403284"
-	testAccountJSON := `
-{
-  "user_id": "4c65d8a0-ed21-417e-a1a2-65a4e09c3144",
-  "workspace_id": "7c65d8a0-ed21-417e-a1a2-65a4e09c3144"
-}`
-
-	mockAccount := func(t *testing.T, httpClient *client.MockHTTPClient) {
-		httpClient.EXPECT().
-			Do(gomock.Any()).
-			DoAndReturn(func(req *http.Request) (*http.Response, error) {
-				assert.Equal(t, req.Method, http.MethodGet)
-				assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
-				assert.Equal(t, "https://api.greynoise.io/v1/account", req.URL.String())
-
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Body:       responseBody(testAccountJSON),
-				}, nil
-			})
-	}
-
-	type input struct {
-		sensorID  string
-		personaID string
-	}
-
-	testCases := []struct {
-		name   string
-		input  input
-		expect func(*testing.T, *client.MockHTTPClient)
-		want   error
-	}{
-		{
-			name: "happy path",
-			input: input{
-				sensorID:  "ac65d8a0-ed21-417e-a1a2-65a4e09c3144",
-				personaID: "6446a1df-8708-4bf2-9346-6f9dd186cd71",
-			},
-			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
-				httpClient.EXPECT().
-					Do(gomock.Any()).
-					DoAndReturn(func(req *http.Request) (*http.Response, error) {
-						assert.Equal(t, req.Method, http.MethodPut)
-						assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
-						assert.Equal(t, "https://api.greynoise.io/v1/workspaces/"+
-							"7c65d8a0-ed21-417e-a1a2-65a4e09c3144/sensors/ac65d8a0-ed21-417e-a1a2-65a4e09c3144",
-							req.URL.String())
-
-						body, err := io.ReadAll(req.Body)
-						assert.NoError(t, err)
-						assert.JSONEq(t, `{"persona": "6446a1df-8708-4bf2-9346-6f9dd186cd71"}`, string(body))
-
-						return &http.Response{
-							StatusCode: http.StatusAccepted,
-						}, nil
-					})
-			},
-		},
-		{
-			name: "http client error",
-			input: input{
-				sensorID:  "ac65d8a0-ed21-417e-a1a2-65a4e09c3144",
-				personaID: "bc65d8a0-ed21-417e-a1a2-65a4e09c3144",
-			},
-			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
-				httpClient.EXPECT().
-					Do(gomock.Any()).
-					DoAndReturn(func(req *http.Request) (*http.Response, error) {
-						assert.Equal(t, req.Method, http.MethodPut)
-						assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
-						assert.Equal(t, "https://api.greynoise.io/v1/workspaces/"+
-							"7c65d8a0-ed21-417e-a1a2-65a4e09c3144/sensors/ac65d8a0-ed21-417e-a1a2-65a4e09c3144",
-							req.URL.String())
-
-						body, err := io.ReadAll(req.Body)
-						assert.NoError(t, err)
-						assert.JSONEq(t, `{"persona": "bc65d8a0-ed21-417e-a1a2-65a4e09c3144"}`, string(body))
-
-						return nil, errors.New("http error")
-					})
-			},
-			want: errors.New("http error"),
-		},
-		{
-			name: "unexpected status code",
-			input: input{
-				sensorID:  "cc65d8a0-ed21-417e-a1a2-65a4e09c3144",
-				personaID: "bc65d8a0-ed21-417e-a1a2-65a4e09c3144",
-			},
-			expect: func(t *testing.T, httpClient *client.MockHTTPClient) {
-				httpClient.EXPECT().
-					Do(gomock.Any()).
-					DoAndReturn(func(req *http.Request) (*http.Response, error) {
-						assert.Equal(t, req.Method, http.MethodPut)
-						assert.Equal(t, testAPIKey, req.Header.Get(client.HeaderKey))
-						assert.Equal(t, "https://api.greynoise.io/v1/workspaces/"+
-							"7c65d8a0-ed21-417e-a1a2-65a4e09c3144/sensors/cc65d8a0-ed21-417e-a1a2-65a4e09c3144",
-							req.URL.String())
-
-						body, err := io.ReadAll(req.Body)
-						assert.NoError(t, err)
-						assert.JSONEq(t, `{"persona": "bc65d8a0-ed21-417e-a1a2-65a4e09c3144"}`, string(body))
-
-						return &http.Response{
-							StatusCode: http.StatusInternalServerError,
-						}, nil
-					})
-			},
-			want: client.NewErrUnexpectedStatusCode(http.StatusAccepted, http.StatusInternalServerError),
-		},
-	}
-	for _, tc := range testCases {
-		tc := tc
-
-		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			mockHTTPClient := client.NewMockHTTPClient(ctrl)
-			mockAccount(t, mockHTTPClient)
-
-			if tc.expect != nil {
-				tc.expect(t, mockHTTPClient)
-			}
-
-			gClient, err := client.New(testAPIKey, client.WithHTTPClient(mockHTTPClient))
-			assert.NoError(t, err)
-
-			err = gClient.ApplyPersona(context.Background(), tc.input.sensorID, tc.input.personaID)
-			assert.Equal(t, tc.want, err)
 		})
 	}
 }

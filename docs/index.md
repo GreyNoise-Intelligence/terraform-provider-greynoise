@@ -192,6 +192,11 @@ resource "greynoise_sensor_persona" "this" {
   persona_id = data.greynoise_personas.rdp.ids[0]
 }
 
+resource "greynoise_sensor_metadata" "this" {
+  sensor_id = data.greynoise_sensor.this.id
+  name      = "greynoise-example"
+}
+
 # -- outputs --
 output "personas" {
   description = "RDP personas"

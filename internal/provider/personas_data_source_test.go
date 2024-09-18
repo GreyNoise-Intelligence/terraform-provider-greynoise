@@ -36,12 +36,6 @@ func TestAccPersonasDataSource(t *testing.T) {
 					},
 					Description: "A Remote Desktop Protocol server. Designed to observe credential " +
 						"bruteforce activity.",
-					ApplicationProtocols: []string{
-						"rdp",
-					},
-					Ports: []int32{
-						3389,
-					},
 				},
 			},
 			Pagination: client.Pagination{

@@ -4,7 +4,10 @@ import (
 	"time"
 )
 
-type SensorSortBy string
+type (
+	SensorSortBy   string
+	MetadataAccess string
+)
 
 const (
 	SensorSortByName      = SensorSortBy("name")
@@ -13,6 +16,10 @@ const (
 	SensorSortByPersona   = SensorSortBy("persona_name")
 	SensorSortByCreatedAt = SensorSortBy("created_at")
 	SensorSortByStatus    = SensorSortBy("status")
+
+	MetadataAccessReadWrite = MetadataAccess("readwrite") // User readable and modifiable
+	MetadataAccessReadonly  = MetadataAccess("readonly")  // User readable, not modifiable
+	MetadataAccessHidden    = MetadataAccess("hidden")
 )
 
 type Pagination struct {
@@ -73,8 +80,6 @@ type Persona struct {
 	Workspace                 string    `json:"workspace"`
 	Categories                []string  `json:"categories"`
 	Description               string    `json:"description"`
-	ApplicationProtocols      []string  `json:"application_protocols"`
-	Ports                     []int32   `json:"ports"`
 	OperatingSystem           string    `json:"operating_system"`
 	Icon                      string    `json:"icon"`
 	AssociatedVulnerabilities []string  `json:"associated_vulnerabilities"`
@@ -90,15 +95,42 @@ type SensorSearchResponse struct {
 	Pagination Pagination `json:"pagination"`
 }
 
+type SensorUpdateRequest struct {
+	Name     string          `json:"name,omitempty"`
+	Persona  string          `json:"persona,omitempty"`
+	Metadata *SensorMetadata `json:"metadata,omitempty"`
+}
+
+type SensorMetadata struct {
+	Items []SensorMetadatum `json:"items"`
+}
+
+type SensorMetadatum struct {
+	Access MetadataAccess `json:"access"`
+	Name   string         `json:"name"`
+	Val    string         `json:"val"`
+}
+
+func (s *SensorMetadatum) Validate() error {
+	switch s.Access {
+	case MetadataAccessHidden, MetadataAccessReadWrite, MetadataAccessReadonly:
+	default:
+		return NewErrInvalidField("access", "unknown")
+	}
+
+	return nil
+}
+
 type Sensor struct {
-	ID         string    `json:"sensor_id"`
-	Name       string    `json:"name"`
-	PublicIps  []string  `json:"public_ips"`
-	AccessPort int32     `json:"access_port"`
-	Persona    string    `json:"persona"`
-	Status     string    `json:"status"`
-	Disabled   bool      `json:"disabled"`
-	LastSeen   time.Time `json:"last_seen"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID         string         `json:"sensor_id"`
+	Name       string         `json:"name"`
+	PublicIps  []string       `json:"public_ips"`
+	AccessPort int32          `json:"access_port"`
+	Persona    string         `json:"persona"`
+	Metadata   SensorMetadata `json:"metadata"`
+	Status     string         `json:"status"`
+	Disabled   bool           `json:"disabled"`
+	LastSeen   time.Time      `json:"last_seen"`
+	CreatedAt  time.Time      `json:"created_at"`
+	UpdatedAt  time.Time      `json:"updated_at"`
 }
