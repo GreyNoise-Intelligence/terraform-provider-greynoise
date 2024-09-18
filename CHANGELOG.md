@@ -1,4 +1,8 @@
 
+## v0.5.0 - 2024-09-18
+### FEATURES
+* * resource/greynoise_sensor_metadata: Add resource to manage sensor metadata
+
 ## v0.4.1 - 2024-09-13
 ### BUG FIXES
 * resource/greynoise_sensor_bootstrap: Fixes bug with changing value of computed SSH port selected.
