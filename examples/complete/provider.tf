@@ -11,6 +11,8 @@ terraform {
   }
 }
 
+provider "greynoise" {}
+
 provider "aws" {
   default_tags {
     tags = {

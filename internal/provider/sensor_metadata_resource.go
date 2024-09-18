@@ -15,34 +15,30 @@ import (
 	"github.com/GreyNoise-Intelligence/terraform-provider-greynoise/internal/client"
 )
 
-var _ resource.Resource = &SensorPersonaResource{}
-var _ resource.ResourceWithImportState = &SensorPersonaResource{}
+var _ resource.Resource = &SensorMetadataResource{}
+var _ resource.ResourceWithImportState = &SensorMetadataResource{}
 
-func NewSensorPersonaResource() resource.Resource {
-	return &SensorPersonaResource{}
+func NewSensorMetadataResource() resource.Resource {
+	return &SensorMetadataResource{}
 }
 
-type SensorPersonaResource struct {
+type SensorMetadataResource struct {
 	data *Data
 }
 
-type SensorPersonaResourceModel struct {
-	PersonaID types.String `tfsdk:"persona_id"`
-	SensorID  types.String `tfsdk:"sensor_id"`
+type SensorMetadataResourceModel struct {
+	SensorID types.String `tfsdk:"sensor_id"`
+	Name     types.String `tfsdk:"name"`
 }
 
-func (r *SensorPersonaResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_sensor_persona"
+func (r *SensorMetadataResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_sensor_metadata"
 }
 
-func (r *SensorPersonaResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *SensorMetadataResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: `Sensor persona resource is used to manage the persona deployed to a sensor.`,
+		MarkdownDescription: `Sensor metadata resource is used to manage metadata about a sensor.`,
 		Attributes: map[string]schema.Attribute{
-			"persona_id": schema.StringAttribute{
-				MarkdownDescription: "Persona ID for sensor update.",
-				Required:            true,
-			},
 			"sensor_id": schema.StringAttribute{
 				MarkdownDescription: "UUID of the sensor.",
 				Required:            true,
@@ -50,11 +46,15 @@ func (r *SensorPersonaResource) Schema(_ context.Context, _ resource.SchemaReque
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
+			"name": schema.StringAttribute{
+				MarkdownDescription: "Name of the sensor.",
+				Required:            true,
+			},
 		},
 	}
 }
 
-func (r *SensorPersonaResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *SensorMetadataResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
 		return
@@ -74,8 +74,8 @@ func (r *SensorPersonaResource) Configure(_ context.Context, req resource.Config
 	r.data = data
 }
 
-func (r *SensorPersonaResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var data SensorPersonaResourceModel
+func (r *SensorMetadataResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var data SensorMetadataResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
@@ -83,22 +83,22 @@ func (r *SensorPersonaResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	if err := r.data.Client.UpdateSensor(ctx, data.SensorID.ValueString(), client.SensorUpdateRequest{
-		Persona: data.PersonaID.ValueString(),
+		Name: data.Name.ValueString(),
 	}); err != nil {
 		resp.Diagnostics.AddError(
 			"Operation error",
-			fmt.Sprintf("Error occurred while applying persona to sensor: %s", err.Error()),
+			fmt.Sprintf("Error occurred while updating sensor metadata: %s", err.Error()),
 		)
 
 		return
 	}
 
-	tflog.Trace(ctx, "Created sensor persona resource")
+	tflog.Trace(ctx, "Created sensor metadata resource")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *SensorPersonaResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data SensorPersonaResourceModel
+func (r *SensorMetadataResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var data SensorMetadataResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 
@@ -110,18 +110,19 @@ func (r *SensorPersonaResource) Read(ctx context.Context, req resource.ReadReque
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Sensor error",
-			fmt.Sprintf("Error occurred while checking sensor: %s", err.Error()),
+			fmt.Sprintf("Error occurred while getting sensor: %s", err.Error()),
 		)
 
 		return
 	}
-	data.PersonaID = types.StringValue(sensor.Persona)
+
+	data.Name = types.StringValue(sensor.Name)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *SensorPersonaResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var data SensorPersonaResourceModel
+func (r *SensorMetadataResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var data SensorMetadataResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 
@@ -130,11 +131,11 @@ func (r *SensorPersonaResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	if err := r.data.Client.UpdateSensor(ctx, data.SensorID.ValueString(), client.SensorUpdateRequest{
-		Persona: data.PersonaID.ValueString(),
+		Name: data.Name.ValueString(),
 	}); err != nil {
 		resp.Diagnostics.AddError(
 			"Operation error",
-			fmt.Sprintf("Error occurred while applying persona to sensor: %s", err.Error()),
+			fmt.Sprintf("Error occurred while updating sensor metadata: %s", err.Error()),
 		)
 
 		return
@@ -144,8 +145,8 @@ func (r *SensorPersonaResource) Update(ctx context.Context, req resource.UpdateR
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *SensorPersonaResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var data SensorPersonaResourceModel
+func (r *SensorMetadataResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var data SensorMetadataResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 
@@ -154,6 +155,6 @@ func (r *SensorPersonaResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 }
 
-func (r *SensorPersonaResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *SensorMetadataResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("sensor_id"), req, resp)
 }
