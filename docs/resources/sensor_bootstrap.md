@@ -82,7 +82,7 @@ resource "greynoise_sensor_bootstrap" "this" {
 
 ### Required
 
-- `public_ip` (String) Public IP of the server to bootstrap.
+- `public_ip` (String) Public IP(s) of the server to bootstrap. Comma-separated list of IPs or CIDRs is acceptable.
 
 ### Optional
 
@@ -94,6 +94,7 @@ resource "greynoise_sensor_bootstrap" "this" {
 ### Read-Only
 
 - `bootstrap_script` (String) Script that can be run to boostrap a server.
+- `sensor_public_ips` (List of String) Public IP(s) of the sensor (list is a sample and might not be exhaustive).
 - `setup_script` (String, Sensitive) Script that sets up the server environment.
 - `ssh_port_selected` (Number) SSH port selected - same as ssh_port if set, otherwise randomly selected port.
 - `unbootstrap_script` (String) Script that can be run to unboostrap a server.
