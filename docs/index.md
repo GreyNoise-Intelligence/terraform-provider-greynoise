@@ -119,7 +119,7 @@ data "greynoise_personas" "rdp" {
 }
 
 resource "greynoise_sensor_bootstrap" "this" {
-  public_ip = aws_instance.this.public_ip
+  public_ips = [aws_instance.this.public_ip]
 
   config = {
     # using config to comply with destroy provisioners only

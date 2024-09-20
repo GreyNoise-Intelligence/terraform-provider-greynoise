@@ -1,5 +1,5 @@
 resource "greynoise_sensor_bootstrap" "this" {
-  public_ip = "44.13.34.10"
+  public_ips = ["44.13.34.10"]
 
   config = {
     # using config to comply with destroy provisioners only

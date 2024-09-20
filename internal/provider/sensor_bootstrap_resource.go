@@ -6,12 +6,15 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"net"
+	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -24,6 +27,8 @@ const (
 var _ resource.Resource = &SensorBootstrapResource{}
 var _ resource.ResourceWithImportState = &SensorBootstrapResource{}
 
+var _ resource.ResourceWithConfigValidators = &SensorBootstrapResource{}
+
 func NewSensorBootstrapResource() resource.Resource {
 	return &SensorBootstrapResource{}
 }
@@ -34,6 +39,7 @@ type SensorBootstrapResource struct {
 
 type SensorBootstrapResourceModel struct {
 	PublicIP          types.String `tfsdk:"public_ip"`
+	PublicIPs         types.List   `tfsdk:"public_ips"`
 	InternalIP        types.String `tfsdk:"internal_ip"`
 	Config            types.Map    `tfsdk:"config"`
 	NAT               types.Bool   `tfsdk:"nat"`
@@ -57,10 +63,17 @@ This resource is inspired by [null_resource](https://registry.terraform.io/provi
 		Attributes: map[string]schema.Attribute{
 			"public_ip": schema.StringAttribute{
 				MarkdownDescription: "Public IP of the server to bootstrap.",
-				Required:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+				Optional:            true,
+				DeprecationMessage: "Remove this attribute's configuration as it's no longer in use and the attribute " +
+					"will be removed in the next major version of the provider. Use `public_ips` instead.",
+			},
+			"public_ips": schema.ListAttribute{
+				MarkdownDescription: "Public IPs used to bootstrap the server.",
+				ElementType:         types.StringType,
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.RequiresReplace(),
 				},
+				Optional: true,
 			},
 			"internal_ip": schema.StringAttribute{
 				MarkdownDescription: "Internal IP of the server to bootstrap.",
@@ -129,7 +142,11 @@ func (r *SensorBootstrapResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
-	r.computeAttributes(&data)
+	if diags := r.computeAttributes(ctx, &data); len(diags) != 0 {
+		resp.Diagnostics.Append(diags...)
+
+		return
+	}
 
 	tflog.Trace(ctx, "Created sensor bootstrap resource")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -143,7 +160,11 @@ func (r *SensorBootstrapResource) Read(ctx context.Context, req resource.ReadReq
 		return
 	}
 
-	r.computeAttributes(&data)
+	if diags := r.computeAttributes(ctx, &data); len(diags) != 0 {
+		resp.Diagnostics.Append(diags...)
+
+		return
+	}
 
 	tflog.Trace(ctx, "Read sensor bootstrap resource")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -157,7 +178,11 @@ func (r *SensorBootstrapResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
-	r.computeAttributes(&data)
+	if diags := r.computeAttributes(ctx, &data); len(diags) != 0 {
+		resp.Diagnostics.Append(diags...)
+
+		return
+	}
 
 	tflog.Trace(ctx, "Update sensor bootstrap resource")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -170,20 +195,47 @@ func (r *SensorBootstrapResource) ImportState(ctx context.Context, req resource.
 	resource.ImportStatePassthroughID(ctx, path.Root("public_ip"), req, resp)
 }
 
-func (r *SensorBootstrapResource) computeAttributes(data *SensorBootstrapResourceModel) {
+func (r *SensorBootstrapResource) ConfigValidators(_ context.Context) []resource.ConfigValidator {
+	return []resource.ConfigValidator{
+		resourcevalidator.AtLeastOneOf(
+			path.MatchRoot("public_ip"),
+			path.MatchRoot("public_ips"),
+		),
+	}
+}
+
+func (r *SensorBootstrapResource) computeAttributes(ctx context.Context, data *SensorBootstrapResourceModel) diag.Diagnostics {
 	var (
 		publicIPArg, internalIPArg, sshPortArg, natArg string
 	)
 
-	publicIPArg = fmt.Sprintf(" -p %v", data.PublicIP.ValueString())
+	var publicIPStrs []string
+	if !data.PublicIP.IsNull() {
+		publicIPStrs = []string{data.PublicIP.ValueString()}
+	} else {
+
+		diags := data.PublicIPs.ElementsAs(ctx, &publicIPStrs, false)
+		if len(diags) != 0 {
+			return diags
+		}
+	}
+
+	publicIPArg = fmt.Sprintf(" -p %v", strings.Join(publicIPStrs, ","))
 
 	if !data.InternalIP.IsNull() {
 		internalIPArg = fmt.Sprintf(" -i %v", data.InternalIP.ValueString())
 	}
 
 	if data.SSHPort.IsNull() {
-		publicIP := net.ParseIP(data.PublicIP.ValueString())
-		data.SSHPortSelected = types.Int32Value(DeterministicSSHPort(publicIP))
+		publicIPs, err := parseIPs(publicIPStrs)
+		if err != nil {
+			return diag.Diagnostics{
+				diag.NewErrorDiagnostic("Parsing IP(s)",
+					fmt.Sprintf("Error occurred while parsing IPs: %s", err.Error())),
+			}
+		}
+
+		data.SSHPortSelected = types.Int32Value(DeterministicSSHPort(publicIPs[0]))
 	} else {
 		data.SSHPortSelected = data.SSHPort
 	}
@@ -214,6 +266,26 @@ curl -H "key: $KEY" -L %s | sudo bash -s --`,
 			r.data.Client.SensorUnBootstrapURL().String(),
 		),
 	)
+
+	return nil
+}
+
+func parseIPs(ipStrs []string) ([]net.IP, error) {
+	ips := make([]net.IP, len(ipStrs))
+	for i, ipStr := range ipStrs {
+		ip := net.ParseIP(ipStr)
+		if ip == nil {
+			var err error
+			ip, _, err = net.ParseCIDR(ipStr)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		ips[i] = ip
+	}
+
+	return ips, nil
 }
 
 func DeterministicSSHPort(ip net.IP) int32 {
