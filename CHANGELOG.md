@@ -1,4 +1,8 @@
 
+## v0.6.0 - 2024-09-20
+### FEATURES
+* resource/greynoise_sensor_bootstrap: Parses `public_ip` as a comma-separated list of IPs or CIDRs into `sensor_public_ips`.
+
 ## v0.5.0 - 2024-09-18
 ### FEATURES
 * * resource/greynoise_sensor_metadata: Add resource to manage sensor metadata
