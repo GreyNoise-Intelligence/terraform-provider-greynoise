@@ -1,0 +1,3 @@
+kind: FEATURES
+body: 'resource/greynoise_sensor_bootstrap: Parses `public_ip` as a comma-separated list of IPs or CIDRs into `sensor_public_ips`.'
+time: 2024-09-20T15:26:44.354277-05:00

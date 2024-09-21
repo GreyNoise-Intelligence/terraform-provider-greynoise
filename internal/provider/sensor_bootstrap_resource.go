@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"net"
+	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -37,6 +39,7 @@ type SensorBootstrapResourceModel struct {
 	InternalIP        types.String `tfsdk:"internal_ip"`
 	Config            types.Map    `tfsdk:"config"`
 	NAT               types.Bool   `tfsdk:"nat"`
+	SensorPublicIPs   types.List   `tfsdk:"sensor_public_ips"`
 	SetupScript       types.String `tfsdk:"setup_script"`
 	BootstrapScript   types.String `tfsdk:"bootstrap_script"`
 	UnBootstrapScript types.String `tfsdk:"unbootstrap_script"`
@@ -56,8 +59,9 @@ It generates a script that can be used with a ` + "`remote-exec`" + ` provisione
 This resource is inspired by [null_resource](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) to encapsulate provisioners.`,
 		Attributes: map[string]schema.Attribute{
 			"public_ip": schema.StringAttribute{
-				MarkdownDescription: "Public IP of the server to bootstrap.",
-				Required:            true,
+				MarkdownDescription: "Public IP(s) of the server to bootstrap. " +
+					"Comma-separated list of IPs or CIDRs is acceptable.",
+				Required: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -69,6 +73,12 @@ This resource is inspired by [null_resource](https://registry.terraform.io/provi
 			"nat": schema.BoolAttribute{
 				MarkdownDescription: "Whether or not NAT is used to route traffic to the server.",
 				Optional:            true,
+			},
+			"sensor_public_ips": schema.ListAttribute{
+				ElementType: types.StringType,
+				MarkdownDescription: "Public IP(s) of the sensor" +
+					" (list is a sample and might not be exhaustive).",
+				Computed: true,
 			},
 			"setup_script": schema.StringAttribute{
 				MarkdownDescription: "Script that sets up the server environment.",
@@ -129,7 +139,11 @@ func (r *SensorBootstrapResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
-	r.computeAttributes(&data)
+	if diags := r.computeAttributes(ctx, &data); len(diags) != 0 {
+		resp.Diagnostics.Append(diags...)
+
+		return
+	}
 
 	tflog.Trace(ctx, "Created sensor bootstrap resource")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -143,7 +157,11 @@ func (r *SensorBootstrapResource) Read(ctx context.Context, req resource.ReadReq
 		return
 	}
 
-	r.computeAttributes(&data)
+	if diags := r.computeAttributes(ctx, &data); len(diags) != 0 {
+		resp.Diagnostics.Append(diags...)
+
+		return
+	}
 
 	tflog.Trace(ctx, "Read sensor bootstrap resource")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -157,7 +175,11 @@ func (r *SensorBootstrapResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
-	r.computeAttributes(&data)
+	if diags := r.computeAttributes(ctx, &data); len(diags) != 0 {
+		resp.Diagnostics.Append(diags...)
+
+		return
+	}
 
 	tflog.Trace(ctx, "Update sensor bootstrap resource")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -170,20 +192,40 @@ func (r *SensorBootstrapResource) ImportState(ctx context.Context, req resource.
 	resource.ImportStatePassthroughID(ctx, path.Root("public_ip"), req, resp)
 }
 
-func (r *SensorBootstrapResource) computeAttributes(data *SensorBootstrapResourceModel) {
+func (r *SensorBootstrapResource) computeAttributes(ctx context.Context, data *SensorBootstrapResourceModel) diag.Diagnostics {
 	var (
 		publicIPArg, internalIPArg, sshPortArg, natArg string
 	)
 
 	publicIPArg = fmt.Sprintf(" -p %v", data.PublicIP.ValueString())
+	publicIPRawStrs := strings.Split(data.PublicIP.ValueString(), ",")
+	publicIPs, err := parseIPs(publicIPRawStrs)
+
+	publicIPStrs := make([]string, len(publicIPs))
+	for i, ip := range publicIPs {
+		publicIPStrs[i] = ip.String()
+	}
+
+	sensorPublicIPs, diags := types.ListValueFrom(ctx, types.StringType, publicIPStrs)
+	if len(diags) != 0 {
+		return diags
+	}
+
+	data.SensorPublicIPs = sensorPublicIPs
+
+	if err != nil {
+		return diag.Diagnostics{
+			diag.NewErrorDiagnostic("Parsing IP(s)",
+				fmt.Sprintf("Error occurred while parsing IP: %s", err.Error())),
+		}
+	}
 
 	if !data.InternalIP.IsNull() {
 		internalIPArg = fmt.Sprintf(" -i %v", data.InternalIP.ValueString())
 	}
 
 	if data.SSHPort.IsNull() {
-		publicIP := net.ParseIP(data.PublicIP.ValueString())
-		data.SSHPortSelected = types.Int32Value(DeterministicSSHPort(publicIP))
+		data.SSHPortSelected = types.Int32Value(DeterministicSSHPort(publicIPs[0]))
 	} else {
 		data.SSHPortSelected = data.SSHPort
 	}
@@ -214,6 +256,26 @@ curl -H "key: $KEY" -L %s | sudo bash -s --`,
 			r.data.Client.SensorUnBootstrapURL().String(),
 		),
 	)
+
+	return nil
+}
+
+func parseIPs(ipStrs []string) ([]net.IP, error) {
+	ips := make([]net.IP, len(ipStrs))
+	for i, ipStr := range ipStrs {
+		ip := net.ParseIP(ipStr)
+		if ip == nil {
+			var err error
+			ip, _, err = net.ParseCIDR(ipStr)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		ips[i] = ip
+	}
+
+	return ips, nil
 }
 
 func DeterministicSSHPort(ip net.IP) int32 {

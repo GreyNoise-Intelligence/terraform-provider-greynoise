@@ -39,6 +39,11 @@ func TestDeterministicSSHPort(t *testing.T) {
 			ip:   net.ParseIP("39.101.187.33"),
 			port: 62864,
 		},
+		{
+			name: "case-5",
+			ip:   net.ParseIP("176.97.114.156"),
+			port: 56988,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -91,6 +96,9 @@ func TestAccSensorBootstrapResource(t *testing.T) {
 						resource.TestCheckResourceAttrWith("greynoise_sensor_bootstrap.this", "ssh_port_selected",
 							checkAutoSelectedSSHPort,
 						),
+						resource.TestCheckResourceAttr("greynoise_sensor_bootstrap.this", "sensor_public_ips.0",
+							"185.108.182.240",
+						),
 					),
 				},
 			},
@@ -101,12 +109,12 @@ func TestAccSensorBootstrapResource(t *testing.T) {
 				{
 					config: `
 					resource "greynoise_sensor_bootstrap" "this" {
-					  public_ip   = "179.108.182.240"
+					  public_ip   = "179.108.182.240/32,172.108.182.241/32"
 					  internal_ip = "172.108.182.240"
 					  ssh_port    = 2000
 					  nat         = true
-					  config     = {
-						public_ip = "179.108.182.240"
+					  config      = {
+						public_ip = "179.108.182.240/32"
 					  }
 					}`,
 					check: resource.ComposeAggregateTestCheckFunc(
@@ -114,7 +122,7 @@ func TestAccSensorBootstrapResource(t *testing.T) {
 							fmt.Sprintf("echo %s > ~/.greynoise.key", mockAPIKey),
 						),
 						resource.TestCheckResourceAttrWith("greynoise_sensor_bootstrap.this", "bootstrap_script",
-							checkBootstrapScriptFunc(server.URL, mockWorkspaceID, "179.108.182.240",
+							checkBootstrapScriptFunc(server.URL, mockWorkspaceID, "179.108.182.240/32,172.108.182.241/32",
 								strRef("172.108.182.240"), intRef(2000), true),
 						),
 						resource.TestCheckResourceAttr("greynoise_sensor_bootstrap.this", "unbootstrap_script",
@@ -126,7 +134,13 @@ curl -H "key: $KEY" -L %s/v1/workspaces/%s/sensors/unbootstrap/script | sudo bas
 						resource.TestCheckResourceAttr("greynoise_sensor_bootstrap.this", "ssh_port_selected",
 							"2000"),
 						resource.TestCheckResourceAttr("greynoise_sensor_bootstrap.this", "config.public_ip",
-							"179.108.182.240"),
+							"179.108.182.240/32"),
+						resource.TestCheckResourceAttr("greynoise_sensor_bootstrap.this", "sensor_public_ips.0",
+							"179.108.182.240",
+						),
+						resource.TestCheckResourceAttr("greynoise_sensor_bootstrap.this", "sensor_public_ips.1",
+							"172.108.182.241",
+						),
 					),
 				},
 			},
@@ -137,7 +151,7 @@ curl -H "key: $KEY" -L %s/v1/workspaces/%s/sensors/unbootstrap/script | sudo bas
 				{
 					config: `
 					resource "greynoise_sensor_bootstrap" "this" {
-					  public_ip   = "179.108.182.240"	
+					  public_ip  = "179.108.182.240,186.249.111.211/16"	
 					  internal_ip = "172.108.182.240"	
 					}`,
 					check: resource.ComposeAggregateTestCheckFunc(
@@ -147,8 +161,14 @@ curl -H "key: $KEY" -L %s/v1/workspaces/%s/sensors/unbootstrap/script | sudo bas
 						resource.TestCheckResourceAttr("greynoise_sensor_bootstrap.this", "ssh_port_selected",
 							"58026"),
 						resource.TestCheckResourceAttrWith("greynoise_sensor_bootstrap.this", "bootstrap_script",
-							checkBootstrapScriptFunc(server.URL, mockWorkspaceID, "179.108.182.240",
+							checkBootstrapScriptFunc(server.URL, mockWorkspaceID, "179.108.182.240,186.249.111.211/16",
 								strRef("172.108.182.240"), nil, false),
+						),
+						resource.TestCheckResourceAttr("greynoise_sensor_bootstrap.this", "sensor_public_ips.0",
+							"179.108.182.240",
+						),
+						resource.TestCheckResourceAttr("greynoise_sensor_bootstrap.this", "sensor_public_ips.1",
+							"186.249.111.211",
 						),
 					),
 				},
@@ -157,7 +177,7 @@ curl -H "key: $KEY" -L %s/v1/workspaces/%s/sensors/unbootstrap/script | sudo bas
 					resource "greynoise_sensor_bootstrap" "this" {
 					  public_ip   = "136.108.182.240"	
 					  internal_ip = "172.108.182.240"
-					  config    = {
+					  config      = {
 					    internal_ip = "172.108.182.240"
 					  }
 					}`,
@@ -169,8 +189,14 @@ curl -H "key: $KEY" -L %s/v1/workspaces/%s/sensors/unbootstrap/script | sudo bas
 							checkBootstrapScriptFunc(server.URL, mockWorkspaceID, "136.108.182.240",
 								strRef("172.108.182.240"), nil, false),
 						),
+						resource.TestCheckResourceAttr("greynoise_sensor_bootstrap.this", "ssh_port_selected",
+							"59041",
+						),
 						resource.TestCheckResourceAttr("greynoise_sensor_bootstrap.this", "config.internal_ip",
 							"172.108.182.240"),
+						resource.TestCheckResourceAttr("greynoise_sensor_bootstrap.this", "sensor_public_ips.0",
+							"136.108.182.240",
+						),
 					),
 					planChecks: resource.ConfigPlanChecks{
 						PreApply: []plancheck.PlanCheck{
@@ -182,11 +208,22 @@ curl -H "key: $KEY" -L %s/v1/workspaces/%s/sensors/unbootstrap/script | sudo bas
 			},
 		},
 		{
-			name: "missing public IP",
+			name: "missing public IP field",
 			steps: []step{
 				{
 					config:      `resource "greynoise_sensor_bootstrap" "this" {}`,
 					expectError: regexp.MustCompile(`The argument "public_ip" is required, but no definition was found.`),
+				},
+			},
+		},
+		{
+			name: "invalid public IP",
+			steps: []step{
+				{
+					config: `resource "greynoise_sensor_bootstrap" "this" {
+					   public_ip = "invalid_ip"
+					}`,
+					expectError: regexp.MustCompile(`Error occurred while parsing IP: invalid CIDR address: invalid_ip`),
 				},
 			},
 		},
